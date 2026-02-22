@@ -1,5 +1,6 @@
-// Local storage utilities for data persistence
+import { supabase } from "./supabase";
 
+// Local storage utilities for data persistence
 export interface ExpenseEntry {
   id: string;
   date: string;
@@ -7,6 +8,7 @@ export interface ExpenseEntry {
   category: string;
   description: string;
   type: 'expense' | 'income';
+  user_id?: string;
 }
 
 export interface MoodEntry {
@@ -14,6 +16,7 @@ export interface MoodEntry {
   date: string;
   mood: number; // 1-10
   note?: string;
+  user_id?: string;
 }
 
 export interface HabitEntry {
@@ -21,6 +24,7 @@ export interface HabitEntry {
   date: string;
   habitId: string;
   completed: boolean;
+  user_id?: string;
 }
 
 export interface Habit {
@@ -28,6 +32,7 @@ export interface Habit {
   name: string;
   color: string;
   createdAt: string;
+  user_id?: string;
 }
 
 const STORAGE_KEYS = {
@@ -39,7 +44,7 @@ const STORAGE_KEYS = {
 };
 
 // Generic storage functions
-function getFromStorage<T>(key: string): T[] {
+function getFromLocalStorage<T>(key: string): T[] {
   try {
     const data = localStorage.getItem(key);
     return data ? JSON.parse(data) : [];
@@ -49,7 +54,7 @@ function getFromStorage<T>(key: string): T[] {
   }
 }
 
-function saveToStorage<T>(key: string, data: T[]): void {
+function saveToLocalStorage<T>(key: string, data: T[]): void {
   try {
     localStorage.setItem(key, JSON.stringify(data));
   } catch (error) {
@@ -57,127 +62,177 @@ function saveToStorage<T>(key: string, data: T[]): void {
   }
 }
 
-// Expense functions
-export function getExpenses(): ExpenseEntry[] {
-  return getFromStorage<ExpenseEntry>(STORAGE_KEYS.EXPENSES);
+// Helper to get current user ID
+async function getUserId() {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.user?.id;
 }
 
-export function saveExpense(expense: ExpenseEntry): void {
-  const expenses = getExpenses();
-  const existingIndex = expenses.findIndex(e => e.id === expense.id);
-  
-  if (existingIndex >= 0) {
-    expenses[existingIndex] = expense;
-  } else {
-    expenses.push(expense);
+// Expense functions
+export async function getExpenses(): Promise<ExpenseEntry[]> {
+  const userId = await getUserId();
+  if (userId) {
+    const { data, error } = await supabase
+      .from('expenses')
+      .select('*')
+      .order('date', { ascending: false });
+    
+    if (!error && data) return data;
+  }
+  return getFromLocalStorage<ExpenseEntry>(STORAGE_KEYS.EXPENSES);
+}
+
+export async function saveExpense(expense: ExpenseEntry): Promise<void> {
+  const userId = await getUserId();
+  if (userId) {
+    const { error } = await supabase
+      .from('expenses')
+      .upsert({ ...expense, user_id: userId });
+    
+    if (error) console.error('Error saving to Supabase:', error);
   }
   
-  saveToStorage(STORAGE_KEYS.EXPENSES, expenses);
+  // Also save to local storage as cache
+  const expenses = getFromLocalStorage<ExpenseEntry>(STORAGE_KEYS.EXPENSES);
+  const existingIndex = expenses.findIndex(e => e.id === expense.id);
+  if (existingIndex >= 0) expenses[existingIndex] = expense;
+  else expenses.push(expense);
+  saveToLocalStorage(STORAGE_KEYS.EXPENSES, expenses);
 }
 
-export function deleteExpense(id: string): void {
-  const expenses = getExpenses().filter(e => e.id !== id);
-  saveToStorage(STORAGE_KEYS.EXPENSES, expenses);
+export async function deleteExpense(id: string): Promise<void> {
+  const userId = await getUserId();
+  if (userId) {
+    await supabase.from('expenses').delete().eq('id', id);
+  }
+  const expenses = getFromLocalStorage<ExpenseEntry>(STORAGE_KEYS.EXPENSES).filter(e => e.id !== id);
+  saveToLocalStorage(STORAGE_KEYS.EXPENSES, expenses);
 }
 
 // Mood functions
-export function getMoods(): MoodEntry[] {
-  return getFromStorage<MoodEntry>(STORAGE_KEYS.MOODS);
+export async function getMoods(): Promise<MoodEntry[]> {
+  const userId = await getUserId();
+  if (userId) {
+    const { data, error } = await supabase.from('moods').select('*').order('date', { ascending: false });
+    if (!error && data) return data;
+  }
+  return getFromLocalStorage<MoodEntry>(STORAGE_KEYS.MOODS);
 }
 
-export function saveMood(mood: MoodEntry): void {
-  const moods = getMoods();
-  const existingIndex = moods.findIndex(m => m.date === mood.date);
-  
-  if (existingIndex >= 0) {
-    moods[existingIndex] = mood;
-  } else {
-    moods.push(mood);
+export async function saveMood(mood: MoodEntry): Promise<void> {
+  const userId = await getUserId();
+  if (userId) {
+    await supabase.from('moods').upsert({ ...mood, user_id: userId });
   }
-  
-  saveToStorage(STORAGE_KEYS.MOODS, moods);
+  const moods = getFromLocalStorage<MoodEntry>(STORAGE_KEYS.MOODS);
+  const existingIndex = moods.findIndex(m => m.date === mood.date);
+  if (existingIndex >= 0) moods[existingIndex] = mood;
+  else moods.push(mood);
+  saveToLocalStorage(STORAGE_KEYS.MOODS, moods);
 }
 
 // Habit functions
-export function getHabits(): Habit[] {
-  return getFromStorage<Habit>(STORAGE_KEYS.HABITS);
-}
-
-export function saveHabit(habit: Habit): void {
-  const habits = getHabits();
-  const existingIndex = habits.findIndex(h => h.id === habit.id);
-  
-  if (existingIndex >= 0) {
-    habits[existingIndex] = habit;
-  } else {
-    habits.push(habit);
+export async function getHabits(): Promise<Habit[]> {
+  const userId = await getUserId();
+  if (userId) {
+    const { data, error } = await supabase.from('habits').select('*');
+    if (!error && data) return data;
   }
-  
-  saveToStorage(STORAGE_KEYS.HABITS, habits);
+  return getFromLocalStorage<Habit>(STORAGE_KEYS.HABITS);
 }
 
-export function deleteHabit(id: string): void {
-  const habits = getHabits().filter(h => h.id !== id);
-  saveToStorage(STORAGE_KEYS.HABITS, habits);
-  
-  // Also delete all entries for this habit
-  const entries = getHabitEntries().filter(e => e.habitId !== id);
-  saveToStorage(STORAGE_KEYS.HABIT_ENTRIES, entries);
+export async function saveHabit(habit: Habit): Promise<void> {
+  const userId = await getUserId();
+  if (userId) {
+    await supabase.from('habits').upsert({ ...habit, user_id: userId });
+  }
+  const habits = getFromLocalStorage<Habit>(STORAGE_KEYS.HABITS);
+  const existingIndex = habits.findIndex(h => h.id === habit.id);
+  if (existingIndex >= 0) habits[existingIndex] = habit;
+  else habits.push(habit);
+  saveToLocalStorage(STORAGE_KEYS.HABITS, habits);
 }
 
-export function getHabitEntries(): HabitEntry[] {
-  return getFromStorage<HabitEntry>(STORAGE_KEYS.HABIT_ENTRIES);
+export async function deleteHabit(id: string): Promise<void> {
+  const userId = await getUserId();
+  if (userId) {
+    await supabase.from('habits').delete().eq('id', id);
+    await supabase.from('habit_entries').delete().eq('habitId', id);
+  }
+  const habits = getFromLocalStorage<Habit>(STORAGE_KEYS.HABITS).filter(h => h.id !== id);
+  saveToLocalStorage(STORAGE_KEYS.HABITS, habits);
+  const entries = getFromLocalStorage<HabitEntry>(STORAGE_KEYS.HABIT_ENTRIES).filter(e => e.habitId !== id);
+  saveToLocalStorage(STORAGE_KEYS.HABIT_ENTRIES, entries);
 }
 
-export function toggleHabitEntry(habitId: string, date: string): void {
-  const entries = getHabitEntries();
-  const existingIndex = entries.findIndex(
-    e => e.habitId === habitId && e.date === date
-  );
+export async function getHabitEntries(): Promise<HabitEntry[]> {
+  const userId = await getUserId();
+  if (userId) {
+    const { data, error } = await supabase.from('habit_entries').select('*');
+    if (!error && data) return data;
+  }
+  return getFromLocalStorage<HabitEntry>(STORAGE_KEYS.HABIT_ENTRIES);
+}
+
+export async function toggleHabitEntry(habitId: string, date: string): Promise<void> {
+  const entries = await getHabitEntries();
+  const existingIndex = entries.findIndex(e => e.habitId === habitId && e.date === date);
+  const userId = await getUserId();
   
+  let newCompleted = true;
+  let entryId = `${habitId}-${date}`;
+
   if (existingIndex >= 0) {
-    entries[existingIndex].completed = !entries[existingIndex].completed;
-  } else {
-    entries.push({
-      id: `${habitId}-${date}`,
+    newCompleted = !entries[existingIndex].completed;
+    entryId = entries[existingIndex].id;
+  }
+
+  if (userId) {
+    await supabase.from('habit_entries').upsert({
+      id: entryId,
       date,
       habitId,
-      completed: true,
+      completed: newCompleted,
+      user_id: userId
     });
   }
-  
-  saveToStorage(STORAGE_KEYS.HABIT_ENTRIES, entries);
+
+  const localEntries = getFromLocalStorage<HabitEntry>(STORAGE_KEYS.HABIT_ENTRIES);
+  const localIndex = localEntries.findIndex(e => e.habitId === habitId && e.date === date);
+  if (localIndex >= 0) {
+    localEntries[localIndex].completed = newCompleted;
+  } else {
+    localEntries.push({ id: entryId, date, habitId, completed: newCompleted });
+  }
+  saveToLocalStorage(STORAGE_KEYS.HABIT_ENTRIES, localEntries);
 }
 
-export function isHabitCompleted(habitId: string, date: string): boolean {
-  const entries = getHabitEntries();
+export async function isHabitCompleted(habitId: string, date: string): Promise<boolean> {
+  const entries = await getHabitEntries();
   const entry = entries.find(e => e.habitId === habitId && e.date === date);
   return entry?.completed ?? false;
 }
 
-// Gender preference
-export function getGenderPreference(): 'boy' | 'girl' | null {
-  return localStorage.getItem(STORAGE_KEYS.GENDER_PREFERENCE) as 'boy' | 'girl' | null;
+// Gender preference (Keep in localStorage for now as it's a UI preference)
+export function getGenderPreference(): 'boy' | 'girl' | 'none' | null {
+  return localStorage.getItem(STORAGE_KEYS.GENDER_PREFERENCE) as any;
 }
 
-export function saveGenderPreference(gender: 'boy' | 'girl'): void {
+export function saveGenderPreference(gender: 'boy' | 'girl' | 'none'): void {
   localStorage.setItem(STORAGE_KEYS.GENDER_PREFERENCE, gender);
 }
 
-// Export all data
-export function exportAllData() {
+// Export/Clear
+export async function exportAllData() {
   return {
-    expenses: getExpenses(),
-    moods: getMoods(),
-    habits: getHabits(),
-    habitEntries: getHabitEntries(),
+    expenses: await getExpenses(),
+    moods: await getMoods(),
+    habits: await getHabits(),
+    habitEntries: await getHabitEntries(),
     exportedAt: new Date().toISOString(),
   };
 }
 
-// Clear all data
 export function clearAllData(): void {
-  Object.values(STORAGE_KEYS).forEach(key => {
-    localStorage.removeItem(key);
-  });
+  Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
 }

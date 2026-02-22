@@ -5,7 +5,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "../components/ui/dialog";
-import { getHabits, saveHabit, deleteHabit, Habit, getHabitEntries, toggleHabitEntry, isHabitCompleted } from "../lib/storage";
+import { getHabits, saveHabit, deleteHabit, Habit, getHabitEntries, toggleHabitEntry, HabitEntry } from "../lib/storage";
 import { format, eachDayOfInterval, startOfWeek, endOfWeek, subWeeks, isSameDay, subDays, addWeeks, subYears, addYears, startOfMonth, addMonths, subMonths } from "date-fns";
 import { toast } from "sonner";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -37,6 +37,7 @@ export function Habits() {
   const { theme } = useTheme();
   const location = useLocation();
   const [habits, setHabits] = useState<Habit[]>([]);
+  const [entries, setEntries] = useState<HabitEntry[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isManageOpen, setIsManageOpen] = useState(false);
   const [habitName, setHabitName] = useState("");
@@ -87,12 +88,14 @@ export function Habits() {
     }
   }, [location.search]);
   
-  const loadHabits = () => {
-    const data = getHabits();
+  const loadHabits = async () => {
+    const data = await getHabits();
+    const entryData = await getHabitEntries();
     setHabits(data);
+    setEntries(entryData);
   };
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!habitName.trim()) {
@@ -107,7 +110,7 @@ export function Habits() {
             name: habitName.trim(),
             color: selectedColor,
         };
-        saveHabit(updatedHabit);
+        await saveHabit(updatedHabit);
         setEditingHabit(null);
         toast.success(t("habits.updated") || "Habit updated");
     } else {
@@ -118,19 +121,19 @@ export function Habits() {
           color: selectedColor,
           createdAt: new Date().toISOString(),
         };
-        saveHabit(habit);
+        await saveHabit(habit);
         toast.success(t("habits.added"));
     }
     
-    loadHabits();
+    await loadHabits();
     setIsDialogOpen(false);
     setHabitName("");
     setSelectedColor(COLORS[0]);
   };
   
-  const handleDelete = (id: string) => {
-    deleteHabit(id);
-    loadHabits();
+  const handleDelete = async (id: string) => {
+    await deleteHabit(id);
+    await loadHabits();
     toast.success(t("habits.deleted"));
   };
 
@@ -142,7 +145,7 @@ export function Habits() {
       setIsDialogOpen(true); // Open add/edit dialog
   };
   
-  const handleToggle = (habitId: string, date: string) => {
+  const handleToggle = async (habitId: string, date: string) => {
     // Prevent toggling future dates
     const todayStr = format(new Date(), 'yyyy-MM-dd');
     if (date > todayStr) {
@@ -150,9 +153,9 @@ export function Habits() {
         return;
     }
 
-    toggleHabitEntry(habitId, date);
+    await toggleHabitEntry(habitId, date);
     // Force re-render
-    loadHabits();
+    await loadHabits();
   };
   
   // Calculate statistics
@@ -161,7 +164,6 @@ export function Habits() {
   const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
   
-  const entries = getHabitEntries();
   const totalPossible = habits.length * weekDays.length;
   const totalCompleted = entries.filter(e => {
     const date = new Date(e.date);
@@ -560,7 +562,7 @@ export function Habits() {
                           </td>
                           {currentWeekDays.map(day => {
                             const dateStr = format(day, 'yyyy-MM-dd');
-                            const completed = isHabitCompleted(habit.id, dateStr);
+                            const completed = entries.find(e => e.habitId === habit.id && e.date === dateStr)?.completed ?? false;
                             return (
                               <td key={dateStr} className={cn("text-center p-1 backdrop-blur-sm",
                                   theme === 'ocean' ? "bg-white/5 group-hover:bg-white/10" :
