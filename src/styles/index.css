@@ -1,0 +1,8 @@
+@import './fonts.css';
+@import './tailwind.css';
+@import './theme.css';
+
+/* Custom styles for spiral visualizer */
+.spiral-tooltip {
+  font-family: system-ui, -apple-system, sans-serif;
+}
