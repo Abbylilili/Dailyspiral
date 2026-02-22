@@ -19,6 +19,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
@@ -26,12 +27,16 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  if (loading) return null; // Or a spinner
+  // During initial load, we still render children to prevent white flash.
+  // The children (Layout) will handle their own data loading states.
+  if (loading) return <>{children}</>; 
+  
   if (!session) return <Navigate to="/login" replace />;
 
   return <>{children}</>;

@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Download, Trash2, Info } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Download, Trash2, Info, User, LogOut } from "lucide-react";
+import { supabase } from "../lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../components/ui/alert-dialog";
@@ -13,6 +14,18 @@ export function Settings() {
   const { t } = useLanguage();
   const { theme } = useTheme();
   const [isExporting, setIsExporting] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/login";
+  };
   
   // Theme Helper
   const getCardClass = () => {
@@ -70,6 +83,43 @@ export function Settings() {
             "bg-gradient-to-r from-purple-600 to-pink-600"
         )}>{t("settings.title")}</h2>
       </div>
+
+      {/* Account Profile */}
+      <Card className={cn(getCardClass())}>
+        <CardHeader>
+          <CardTitle className={cn("flex items-center gap-2", theme === 'ocean' && "text-white")}>
+            <User className="w-5 h-5 text-purple-500" />
+            Personal Account
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className={cn("flex items-center justify-between p-4 rounded-2xl", 
+              theme === 'ocean' ? "bg-slate-900/50" : 
+              theme === 'ink' ? "border-2 border-black" :
+              "bg-gray-50"
+          )}>
+            <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-400 to-pink-300 flex items-center justify-center text-white font-bold text-xl">
+                    {user?.email?.[0].toUpperCase() || "U"}
+                </div>
+                <div>
+                    <p className={cn("font-bold", theme === 'ocean' ? "text-white" : "text-gray-800")}>
+                        {user?.email}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Logged in via Email</p>
+                </div>
+            </div>
+            <Button 
+                variant="ghost" 
+                onClick={handleSignOut}
+                className="text-red-500 hover:text-red-600 hover:bg-red-50"
+            >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
       
       {/* About */}
       <Card className={cn(getCardClass())}>

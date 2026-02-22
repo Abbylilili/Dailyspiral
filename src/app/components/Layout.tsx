@@ -1,5 +1,7 @@
 import { Outlet, Link, useLocation } from "react-router";
-import { Home, Wallet, Heart, CheckSquare, TrendingUp, Settings, Languages, Palette, Sun, Moon } from "lucide-react";
+import { Home, Wallet, Heart, CheckSquare, TrendingUp, Settings, Languages, Palette, LogOut, User } from "lucide-react";
+import { supabase } from "../lib/supabase";
+import { useState, useEffect } from "react";
 import { cn } from "./ui/utils";
 import { WelcomeDialog } from "./WelcomeDialog";
 import { FloatingBubbles } from "./FloatingBubbles";
@@ -21,6 +23,18 @@ export function Layout() {
   const location = useLocation();
   const { language, setLanguage, t } = useLanguage();
   const { theme, setTheme } = useTheme();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/login";
+  };
   
   const navItems = [
     { path: "/", icon: Home, label: t("nav.home") },
@@ -245,6 +259,38 @@ export function Layout() {
                       中文
                     </span>
                   </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {/* User Profile & Logout */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className={cn("rounded-full w-10 h-10 transition-all", 
+                      theme === 'ocean' ? "hover:bg-slate-800 text-slate-300" : 
+                      theme === 'ink' ? "hover:bg-black hover:text-white border border-transparent hover:border-black rounded-lg" :
+                      theme === 'zen' ? "bg-white border border-gray-200 shadow-sm hover:shadow-md text-gray-600 hover:text-green-700" :
+                      "hover:bg-black/5"
+                  )}>
+                    <User className="w-5 h-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className={cn("w-56",
+                    theme === 'ocean' ? "bg-slate-800 border-white/10 text-white rounded-xl" :
+                    theme === 'ink' ? "bg-white border-2 border-black rounded-lg shadow-[4px_4px_0px_0px_black]" :
+                    theme === 'zen' ? "bg-white border border-gray-100 shadow-xl rounded-2xl text-gray-800" :
+                    "glass-card rounded-xl border-0"
+                )}>
+                    <DropdownMenuLabel>Account</DropdownMenuLabel>
+                    <div className="px-2 pb-2 text-xs opacity-60 truncate">
+                        {user?.email}
+                    </div>
+                    <DropdownMenuSeparator className={theme === 'ocean' ? "bg-white/10" : ""} />
+                    <DropdownMenuItem 
+                        onClick={handleSignOut}
+                        className={cn("text-red-500 focus:text-red-600 focus:bg-red-50", theme === 'ocean' && "focus:bg-red-900/30")}
+                    >
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Sign Out
+                    </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

@@ -2,8 +2,9 @@
 import { saveExpense, saveMood, saveHabit, toggleHabitEntry } from './storage';
 import { subDays, format } from 'date-fns';
 
-export function initializeDemoData() {
-  // Check if data already exists
+export async function initializeDemoData() {
+  // Check if data already exists locally or in Supabase
+  // For demo purposes, we mainly check localStorage first
   const hasData = localStorage.getItem('dailyspiral_moods') || 
                   localStorage.getItem('dailyspiral_expenses') ||
                   localStorage.getItem('dailyspiral_habits');
@@ -19,12 +20,12 @@ export function initializeDemoData() {
     { id: 'habit-3', name: '早睡早起', color: '#3b82f6' },
   ];
   
-  habits.forEach(h => {
-    saveHabit({
+  for (const h of habits) {
+    await saveHabit({
       ...h,
       createdAt: new Date().toISOString(),
     });
-  });
+  }
   
   // Create demo data for last 14 days
   for (let i = 14; i >= 0; i--) {
@@ -34,7 +35,7 @@ export function initializeDemoData() {
     const baseMood = 5 + Math.sin(i * 0.3) * 2 + Math.random() * 2;
     const mood = Math.max(1, Math.min(10, Math.round(baseMood)));
     
-    saveMood({
+    await saveMood({
       id: date,
       date,
       mood,
@@ -47,7 +48,7 @@ export function initializeDemoData() {
       const category = categories[Math.floor(Math.random() * categories.length)];
       const amount = Math.random() * 100 + 10;
       
-      saveExpense({
+      await saveExpense({
         id: `expense-${date}-1`,
         date,
         amount: parseFloat(amount.toFixed(2)),
@@ -57,12 +58,12 @@ export function initializeDemoData() {
       });
     }
     
-    // Habit completions (higher chance for recent days)
-    habits.forEach(habit => {
-      const completionChance = 0.4 + (14 - i) / 28; // Increases over time
+    // Habit completions
+    for (const habit of habits) {
+      const completionChance = 0.4 + (14 - i) / 28;
       if (Math.random() < completionChance) {
-        toggleHabitEntry(habit.id, date);
+        await toggleHabitEntry(habit.id, date);
       }
-    });
+    }
   }
 }
