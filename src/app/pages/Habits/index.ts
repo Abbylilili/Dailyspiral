@@ -1,1 +1,1 @@
-export { default as Habits } from './Habits';
+export { default as Habits } from '@/app/pages/Habits/Habits';

@@ -7,7 +7,7 @@ import { getMoods, getHabitEntries } from "@/app/lib/storage";
 import { useTheme } from "@/app/contexts/ThemeContext";
 import { cn } from "@/app/components/ui/utils";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import useInsightsData from './hooks/useInsightsData';
+import useInsightsData from '@/app/pages/Insights/hooks/useInsightsData/useInsightsData';
 
 const Insights: FC = () => {
   const { theme } = useTheme();

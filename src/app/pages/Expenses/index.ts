@@ -1,1 +1,1 @@
-export { default as Expenses } from './Expenses';
+export { default as Expenses } from '@/app/pages/Expenses/Expenses';
