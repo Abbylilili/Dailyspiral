@@ -178,7 +178,7 @@ export function Layout() {
               </div>
               
               {/* Theme Switcher */}
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className={cn("rounded-full w-10 h-10 transition-all", 
                       theme === 'ocean' ? "hover:bg-slate-800 text-slate-300" : 
@@ -219,7 +219,7 @@ export function Layout() {
               </DropdownMenu>
 
               {/* Language Switcher */}
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className={cn("rounded-full w-10 h-10 transition-all", 
                       theme === 'ocean' ? "hover:bg-slate-800 text-slate-300" : 
@@ -262,7 +262,7 @@ export function Layout() {
                 </DropdownMenuContent>
               </DropdownMenu>
               {/* User Profile & Logout */}
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className={cn("rounded-full w-10 h-10 transition-all", 
                       theme === 'ocean' ? "hover:bg-slate-800 text-slate-300" : 
