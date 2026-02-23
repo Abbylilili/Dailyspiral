@@ -2,7 +2,7 @@ import type { FC } from 'react';
 import { useState } from 'react';
 import { Plus } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/app/components/ui/dialog";
+import { Dialog } from "@/app/components/ui/dialog";
 import { useTheme } from "@/app/contexts/ThemeContext";
 import { cn } from "@/app/components/ui/utils";
 import ExpenseForm from '@/app/pages/Expenses/components/ExpenseForm';
@@ -24,14 +24,6 @@ const ExpenseHeader: FC<ExpenseHeaderProps> = ({ onAdd }) => {
       }
   };
 
-  const getDialogClass = () => {
-      switch(theme) {
-          case 'ocean': return "bg-slate-800 border border-white/10 text-white shadow-2xl";
-          case 'ink': return "bg-white border-2 border-black text-black shadow-[8px_8px_0px_0px_black] rounded-xl";
-          default: return "glass-card bg-white/80 backdrop-blur-2xl border-white/20 shadow-2xl sm:rounded-3xl";
-      }
-  };
-
   return (
     <div className="flex items-center justify-between">
       <h2 className={cn("text-4xl font-bold bg-clip-text text-transparent",
@@ -41,20 +33,20 @@ const ExpenseHeader: FC<ExpenseHeaderProps> = ({ onAdd }) => {
           "bg-gradient-to-r from-purple-600 to-pink-600"
       )}>Expenses</h2>
       
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogTrigger asChild>
+      <Dialog 
+        open={isOpen} 
+        onOpenChange={setIsOpen}
+        trigger={
           <Button className={cn("relative flex items-center justify-center rounded-full h-12 px-6 transition-transform active:scale-95 w-48", getButtonClass())}>
             <Plus className="absolute left-5 w-5 h-5" />
             <span>Add Record</span>
           </Button>
-        </DialogTrigger>
-        <DialogContent className={cn("max-w-md", getDialogClass())}>
-          <DialogHeader>
-            <DialogTitle className={cn(theme === 'ocean' && "text-white")}>Add Transaction</DialogTitle>
-            <DialogDescription className={cn(theme === 'ocean' && "text-slate-400")}>Record your income or expense</DialogDescription>
-          </DialogHeader>
-          <ExpenseForm onSave={onAdd} onClose={() => setIsOpen(false)} />
-        </DialogContent>
+        }
+        title="Add Transaction"
+        description="Record your income or expense"
+        className="max-w-md"
+      >
+        <ExpenseForm onSave={onAdd} onClose={() => setIsOpen(false)} />
       </Dialog>
     </div>
   );

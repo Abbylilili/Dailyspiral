@@ -9,6 +9,15 @@ interface SpiralVisualizerProps {
   days?: number;
 }
 
+interface Point {
+  x: number;
+  y: number;
+  mood: number;
+  date: string;
+  angle: number;
+  radius: number;
+}
+
 export function SpiralVisualizer({ moods, habitEntries, days = 30 }: SpiralVisualizerProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   
@@ -25,7 +34,6 @@ export function SpiralVisualizer({ moods, habitEntries, days = 30 }: SpiralVisua
     
     svg.attr("viewBox", `0 0 ${width} ${height}`);
     
-    // Create gradient definitions
     const defs = svg.append("defs");
     
     // Prepare data - last N days
@@ -35,12 +43,12 @@ export function SpiralVisualizer({ moods, habitEntries, days = 30 }: SpiralVisua
       .slice(-days);
     
     // Spiral parameters
-    const turns = Math.ceil(sortedMoods.length / 12); // roughly 12 points per turn
+    const turns = Math.ceil(sortedMoods.length / 12); 
     const maxRadius = Math.min(width, height) * 0.4;
     const startRadius = 20;
     
     // Create spiral path
-    const points = sortedMoods.map((mood, i) => {
+    const points: Point[] = sortedMoods.map((mood, i) => {
       const angle = (i / sortedMoods.length) * turns * 2 * Math.PI;
       const radius = startRadius + (maxRadius - startRadius) * (i / sortedMoods.length);
       
@@ -55,7 +63,7 @@ export function SpiralVisualizer({ moods, habitEntries, days = 30 }: SpiralVisua
     });
     
     // Draw connecting line
-    const line = d3.line<typeof points[0]>()
+    const line = d3.line<Point>()
       .x(d => d.x)
       .y(d => d.y)
       .curve(d3.curveCardinal);
@@ -80,7 +88,7 @@ export function SpiralVisualizer({ moods, habitEntries, days = 30 }: SpiralVisua
       });
     
     // Draw mood circles
-    const circles = svg.selectAll(".mood-circle")
+    const circles = svg.selectAll<SVGCircleElement, Point>(".mood-circle")
       .data(points)
       .enter()
       .append("circle")
@@ -96,7 +104,7 @@ export function SpiralVisualizer({ moods, habitEntries, days = 30 }: SpiralVisua
     // Animate circles appearing
     circles.transition()
       .duration(1000)
-      .delay((d, i) => i * 30)
+      .delay((_d, i) => i * 30)
       .attr("r", d => {
         // Size based on habit completion for that day
         const dayHabits = habitEntries.filter(
@@ -120,13 +128,14 @@ export function SpiralVisualizer({ moods, habitEntries, days = 30 }: SpiralVisua
       .style("z-index", "1000");
     
     circles
-      .on("mouseover", function(event, d) {
-        d3.select(this)
+      .on("mouseover", function(this: SVGCircleElement, _event: any, d: Point) {
+        const currentCircle = d3.select(this);
+        const currentR = +(currentCircle.attr("r") || 0);
+        
+        currentCircle
           .transition()
           .duration(200)
-          .attr("r", function() {
-            return +d3.select(this).attr("r") * 1.5;
-          })
+          .attr("r", currentR * 1.5)
           .attr("stroke-width", 3);
         
         const dayHabits = habitEntries.filter(
@@ -141,18 +150,19 @@ export function SpiralVisualizer({ moods, habitEntries, days = 30 }: SpiralVisua
             习惯完成: ${dayHabits}
           `);
       })
-      .on("mousemove", function(event) {
+      .on("mousemove", function(event: any) {
         tooltip
           .style("top", (event.pageY - 10) + "px")
           .style("left", (event.pageX + 10) + "px");
       })
-      .on("mouseout", function(event, d) {
-        d3.select(this)
+      .on("mouseout", function(this: SVGCircleElement, _event: any, _d: Point) {
+        const currentCircle = d3.select(this);
+        const currentR = +(currentCircle.attr("r") || 0);
+        
+        currentCircle
           .transition()
           .duration(200)
-          .attr("r", function() {
-            return +d3.select(this).attr("r") / 1.5;
-          })
+          .attr("r", currentR / 1.5)
           .attr("stroke-width", 2);
         
         tooltip.style("visibility", "hidden");

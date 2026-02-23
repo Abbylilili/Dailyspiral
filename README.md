@@ -2,6 +2,27 @@
 
 A modern life management application integrating expense tracking, mood journaling, habit formation, and AI-driven insights.
 
+## 🗄 Database Setup (Supabase)
+
+The project is configured to work with Supabase for data persistence and authentication.
+
+### Option A: Supabase Cloud (Current Setup)
+1.  **Dashboard**: Access your data at [https://app.supabase.com/]
+2.  **Configuration**:
+    -   Go to **Project Settings > API**.
+    -   Copy `Project URL` and `anon public` key.
+    -   Paste them into your `.env` file as `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+
+### Option B: Local Development (Docker)
+*Use this if you want to develop offline or have a separate environment.*
+1.  **Prerequisites**: Install [Docker Desktop](https://www.docker.com/) and [Supabase CLI](https://supabase.com/docs/guides/cli).
+2.  **Start Services**:
+    ```bash
+    supabase start
+    ```
+3.  **View Local DB**: Open [http://localhost:54323](Supabase Studio).
+4.  **Configuration**: Use the API URL and Keys provided in the terminal output after `supabase start`.
+
 ## 🚀 Getting Started
 
 1.  **Install dependencies**:
@@ -9,7 +30,11 @@ A modern life management application integrating expense tracking, mood journali
     npm install
     ```
 
-2.  **Start development server**:
+2.  **Setup Environment**:
+    -   Copy `.env.example` to `.env`.
+    -   Fill in your Supabase credentials (see above).
+
+3.  **Start development server**:
     ```bash
     npm run dev
     ```
@@ -39,5 +64,3 @@ Every component, hook, or utility must be encapsulated within its own folder:
 - **UI Logic**: Pure data logic must be separated into hooks or utilities.
 - **Theme Support**: Every component must support all four themes: **Pastel, Ocean, Ink, and Zen**.
 
----
-*Original project design available at [Figma Design](https://www.figma.com/design/3YHdo8d7DR8q953UgUwkjQ/Daily-Spiral-PRD-Report).*

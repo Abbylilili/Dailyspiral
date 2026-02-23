@@ -1,92 +1,86 @@
 import * as React from "react";
-
 import { cn } from "@/app/components/ui/utils";
 
-function Card({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card"
-      className={cn(
-        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border",
-        className,
-      )}
-      {...props}
-    />
-  );
+// --- 基础子组件 (保留灵活性) ---
+
+export const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn("flex flex-col space-y-1.5 p-6", className)} {...props} />
+  )
+);
+CardHeader.displayName = "CardHeader";
+
+export const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
+  ({ className, ...props }, ref) => (
+    <h3 ref={ref} className={cn("text-lg font-bold leading-none tracking-tight", className)} {...props} />
+  )
+);
+CardTitle.displayName = "CardTitle";
+
+export const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
+  ({ className, ...props }, ref) => (
+    <p ref={ref} className={cn("text-sm text-muted-foreground opacity-70", className)} {...props} />
+  )
+);
+CardDescription.displayName = "CardDescription";
+
+export const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+  )
+);
+CardContent.displayName = "CardContent";
+
+export const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn("flex items-center p-6 pt-0", className)} {...props} />
+  )
+);
+CardFooter.displayName = "CardFooter";
+
+// --- 主组件接口 (支持配置模式) ---
+
+export interface CardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'content'> {
+  header?: React.ReactNode;
+  tag?: React.ReactNode;
+  description?: React.ReactNode;
+  content?: React.ReactNode;
+  footer?: React.ReactNode;
+  headerClassName?: string;
+  contentClassName?: string;
 }
 
-function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-header"
-      className={cn(
-        "@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 pt-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6",
-        className,
-      )}
-      {...props}
-    />
-  );
-}
+export const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, header, tag, description, content, footer, headerClassName, contentClassName, children, ...props }, ref) => {
+    // 检查是否使用了配置模式
+    const isConfigMode = !!(header || tag || description || content || footer);
 
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <h4
-      data-slot="card-title"
-      className={cn("leading-none", className)}
-      {...props}
-    />
-  );
-}
-
-function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <p
-      data-slot="card-description"
-      className={cn("text-muted-foreground", className)}
-      {...props}
-    />
-  );
-}
-
-function CardAction({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-action"
-      className={cn(
-        "col-start-2 row-span-2 row-start-1 self-start justify-self-end",
-        className,
-      )}
-      {...props}
-    />
-  );
-}
-
-function CardContent({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-content"
-      className={cn("px-6 [&:last-child]:pb-6", className)}
-      {...props}
-    />
-  );
-}
-
-function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-footer"
-      className={cn("flex items-center px-6 pb-6 [.border-t]:pt-6", className)}
-      {...props}
-    />
-  );
-}
-
-export {
-  Card,
-  CardHeader,
-  CardFooter,
-  CardTitle,
-  CardAction,
-  CardDescription,
-  CardContent,
-};
+    return (
+      <div
+        ref={ref}
+        className={cn("rounded-2xl border bg-card text-card-foreground shadow-sm overflow-hidden", className)}
+        {...props}
+      >
+        {isConfigMode ? (
+          <>
+            {(header || tag || description) && (
+              <CardHeader className={headerClassName}>
+                <div className="flex items-center justify-between">
+                  {header && <CardTitle>{header}</CardTitle>}
+                  {tag && <div className="text-xs font-medium opacity-60">{tag}</div>}
+                </div>
+                {description && <CardDescription>{description}</CardDescription>}
+              </CardHeader>
+            )}
+            {content && <CardContent className={contentClassName}>{content}</CardContent>}
+            {children && <CardContent className={contentClassName}>{children}</CardContent>}
+            {footer && <CardFooter>{footer}</CardFooter>}
+          </>
+        ) : (
+          children
+        )}
+      </div>
+    );
+  }
+);
+Card.displayName = "Card";

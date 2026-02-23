@@ -2,12 +2,12 @@ import type { FC } from 'react';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/app/components/ui/dialog";
+import { Dialog } from "@/app/components/ui/dialog";
 import { useTheme } from "@/app/contexts/ThemeContext";
 import { cn } from "@/app/components/ui/utils";
 import type { ExpenseEntry } from "@/app/lib/storage";
 import { format } from "date-fns";
-import { Edit2, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { CATEGORIES, getChartColor } from '@/app/pages/Expenses/constants';
 import { EmptyStateDaisy } from '@/app/pages/Expenses/components/EmptyState';
 
@@ -17,7 +17,7 @@ interface TransactionListProps {
   onUpdate: (expense: ExpenseEntry) => Promise<void>;
 }
 
-const TransactionList: FC<TransactionListProps> = ({ expenses, onDelete, onUpdate }) => {
+const TransactionList: FC<TransactionListProps> = ({ expenses, onDelete }) => {
   const { theme } = useTheme();
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
@@ -73,25 +73,28 @@ const TransactionList: FC<TransactionListProps> = ({ expenses, onDelete, onUpdat
                 );
               })}
               {expenses.length > 5 && (
-                <div className="pt-1 flex justify-center"><Button variant="ghost" onClick={() => setIsHistoryOpen(true)} className="text-xs font-semibold rounded-full h-7 px-4">View All</Button></div>
+                <div className="pt-1 flex justify-center">
+                  <Dialog 
+                    open={isHistoryOpen} 
+                    onOpenChange={setIsHistoryOpen}
+                    trigger={<Button variant="ghost" className="text-xs font-semibold rounded-full h-7 px-4">View All</Button>}
+                    title="Transaction History"
+                    className="max-w-2xl max-h-[80vh] overflow-y-auto"
+                  >
+                    <div className="space-y-2 mt-4">
+                      {expenses.map(expense => (
+                        <div key={expense.id} className="flex justify-between items-center p-3 rounded-xl border hover:bg-gray-50">
+                          <div><p className="font-bold">{expense.category}</p><p className="text-xs opacity-60">{format(new Date(expense.date), 'PPP')}</p></div>
+                          <span className={cn("font-bold", expense.type === 'expense' ? "text-red-500" : "text-green-600")}>{expense.type === 'expense' ? '-' : '+'}${expense.amount.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </Dialog>
+                </div>
               )}
             </div>
         )}
       </CardContent>
-
-      <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Transaction History</DialogTitle></DialogHeader>
-          <div className="space-y-2 mt-4">
-            {expenses.map(expense => (
-              <div key={expense.id} className="flex justify-between items-center p-3 rounded-xl border hover:bg-gray-50">
-                <div><p className="font-bold">{expense.category}</p><p className="text-xs opacity-60">{format(new Date(expense.date), 'PPP')}</p></div>
-                <span className={cn("font-bold", expense.type === 'expense' ? "text-red-500" : "text-green-600")}>{expense.type === 'expense' ? '-' : '+'}${expense.amount.toFixed(2)}</span>
-              </div>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 };

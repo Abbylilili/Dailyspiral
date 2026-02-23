@@ -72,17 +72,25 @@ async function getUserId() {
   return userIdPromise;
 }
 
-// --- Refined Habit Logic ---
+// --- Habits ---
 
 export async function getHabits(): Promise<Habit[]> {
   const localData = getFromLocalStorage<Habit>(STORAGE_KEYS.HABITS);
   const userId = await getUserId();
   
   if (userId) {
-    const { data, error } = await supabase.from('habits').select('*');
+    const { data, error } = await supabase.from('habits').select('*').order('createdat', { ascending: true });
     if (error || !data) return localData;
     
-    const merged = [...data];
+    const processed = data.map(item => ({
+        id: item.id,
+        name: item.name,
+        color: item.color,
+        createdAt: item.createdat,
+        user_id: item.user_id
+    }));
+
+    const merged = [...processed];
     localData.forEach(lItem => {
         const idx = merged.findIndex(mItem => mItem.id === lItem.id);
         if (idx >= 0) merged[idx] = lItem;
@@ -94,7 +102,6 @@ export async function getHabits(): Promise<Habit[]> {
 }
 
 export async function saveHabit(habit: Habit): Promise<void> {
-  // 1. Immediate local update
   const habits = getFromLocalStorage<Habit>(STORAGE_KEYS.HABITS);
   const existingIndex = habits.findIndex(h => h.id === habit.id);
   if (existingIndex >= 0) habits[existingIndex] = habit;
@@ -102,13 +109,16 @@ export async function saveHabit(habit: Habit): Promise<void> {
   saveToLocalStorage(STORAGE_KEYS.HABITS, habits);
   notifyDataChange();
 
-  // 2. Background sync (non-blocking)
-  getUserId().then(userId => {
-    if (userId) {
-      supabase.from('habits').upsert({ ...habit, user_id: userId })
-        .then(({ error }) => { if (error) console.error("Supabase habit sync failed:", error.message); });
-    }
-  });
+  const userId = await getUserId();
+  if (userId) {
+    await supabase.from('habits').upsert({
+      id: habit.id,
+      name: habit.name,
+      color: habit.color,
+      createdat: habit.createdAt,
+      user_id: userId
+    });
+  }
 }
 
 export async function deleteHabit(id: string): Promise<void> {
@@ -116,13 +126,11 @@ export async function deleteHabit(id: string): Promise<void> {
   saveToLocalStorage(STORAGE_KEYS.HABIT_ENTRIES, getFromLocalStorage<HabitEntry>(STORAGE_KEYS.HABIT_ENTRIES).filter(e => e.habitId !== id));
   notifyDataChange();
 
-  getUserId().then(userId => {
-    if (userId) {
-      supabase.from('habits').delete().eq('id', id)
-        .then(({ error }) => { if (error) console.error("Supabase habit delete failed:", error.message); });
-    }
-  });
+  const userId = await getUserId();
+  if (userId) await supabase.from('habits').delete().eq('id', id);
 }
+
+// --- Habit Entries ---
 
 export async function getHabitEntries(): Promise<HabitEntry[]> {
   const localData = getFromLocalStorage<HabitEntry>(STORAGE_KEYS.HABIT_ENTRIES);
@@ -131,7 +139,15 @@ export async function getHabitEntries(): Promise<HabitEntry[]> {
     const { data, error } = await supabase.from('habit_entries').select('*');
     if (error || !data) return localData;
     
-    const merged = [...data];
+    const processed = data.map(item => ({
+        id: item.id,
+        habitId: item.habitid,
+        date: item.date,
+        completed: item.completed,
+        user_id: item.user_id
+    }));
+
+    const merged = [...processed];
     localData.forEach(lItem => {
         const idx = merged.findIndex(mItem => mItem.id === lItem.id || (mItem.habitId === lItem.habitId && mItem.date === lItem.date));
         if (idx >= 0) merged[idx] = lItem;
@@ -157,26 +173,26 @@ export async function toggleHabitEntry(habitId: string, date: string): Promise<v
   saveToLocalStorage(STORAGE_KEYS.HABIT_ENTRIES, entries);
   notifyDataChange();
 
-  // Background sync
-  getUserId().then(userId => {
-    if (userId) {
-      const supabaseId = `${userId}-${habitId}-${date}`;
-      supabase.from('habit_entries').upsert({ ...item, id: supabaseId, user_id: userId })
-        .then(({ error }) => { if (error) console.error("Supabase entry sync failed:", error.message); });
-    }
-  });
+  const userId = await getUserId();
+  if (userId) {
+    const supabaseId = `${userId}-${habitId}-${date}`;
+    await supabase.from('habit_entries').upsert({
+      id: supabaseId,
+      habitid: habitId,
+      date: date,
+      completed: item.completed,
+      user_id: userId
+    });
+  }
 }
 
 export async function isHabitCompleted(habitId: string, date: string): Promise<boolean> {
   const entries = getFromLocalStorage<HabitEntry>(STORAGE_KEYS.HABIT_ENTRIES);
   const entry = entries.find(e => e.habitId === habitId && e.date === date);
-  if (entry) return entry.completed;
-  
-  // If not in local, check if we need to fetch all (usually handled by higher level load)
-  return false;
+  return entry ? entry.completed : false;
 }
 
-// --- Other modules follow same logic ---
+// --- Moods ---
 
 export async function getMoods(): Promise<MoodEntry[]> {
   const local = getFromLocalStorage<MoodEntry>(STORAGE_KEYS.MOODS);
@@ -184,16 +200,7 @@ export async function getMoods(): Promise<MoodEntry[]> {
   if (uid) {
     const { data, error } = await supabase.from('moods').select('*').order('date', { ascending: false });
     if (error || !data) return local;
-    
-    // Granular merge: Use remote as base, but overwrite with anything in local
-    // This handles both new items and updated items correctly.
-    const merged = [...data];
-    local.forEach(lItem => {
-        const idx = merged.findIndex(mItem => mItem.id === lItem.id || mItem.date === lItem.date);
-        if (idx >= 0) merged[idx] = lItem;
-        else merged.push(lItem);
-    });
-    return merged.sort((a, b) => b.date.localeCompare(a.date));
+    return data;
   }
   return local;
 }
@@ -205,15 +212,14 @@ export async function saveMood(mood: MoodEntry): Promise<void> {
   saveToLocalStorage(STORAGE_KEYS.MOODS, moods);
   notifyDataChange();
 
-  getUserId().then(uid => {
-    if (uid) {
-      // Use a composite ID for Supabase to ensure uniqueness per user/date
-      const supabaseId = `${uid}-${mood.date}`;
-      supabase.from('moods').upsert({ ...mood, id: supabaseId, user_id: uid })
-        .then(({ error }) => { if (error) console.error("Supabase mood sync failed:", error.message); });
-    }
-  });
+  const uid = await getUserId();
+  if (uid) {
+    const supabaseId = `${uid}-${mood.date}`;
+    await supabase.from('moods').upsert({ ...mood, id: supabaseId, user_id: uid });
+  }
 }
+
+// --- Expenses ---
 
 export async function getExpenses(): Promise<ExpenseEntry[]> {
   const local = getFromLocalStorage<ExpenseEntry>(STORAGE_KEYS.EXPENSES);
@@ -221,14 +227,7 @@ export async function getExpenses(): Promise<ExpenseEntry[]> {
   if (uid) {
     const { data, error } = await supabase.from('expenses').select('*').order('date', { ascending: false });
     if (error || !data) return local;
-    
-    const merged = [...data];
-    local.forEach(lItem => {
-        const idx = merged.findIndex(mItem => mItem.id === lItem.id);
-        if (idx >= 0) merged[idx] = lItem;
-        else merged.push(lItem);
-    });
-    return merged.sort((a, b) => b.date.localeCompare(a.date));
+    return data;
   }
   return local;
 }
@@ -240,17 +239,15 @@ export async function saveExpense(expense: ExpenseEntry): Promise<void> {
   saveToLocalStorage(STORAGE_KEYS.EXPENSES, items);
   notifyDataChange();
 
-  getUserId().then(uid => {
-    if (uid) supabase.from('expenses').upsert({ ...expense, user_id: uid });
-  });
+  const uid = await getUserId();
+  if (uid) await supabase.from('expenses').upsert({ ...expense, user_id: uid });
 }
 
 export async function deleteExpense(id: string): Promise<void> {
   saveToLocalStorage(STORAGE_KEYS.EXPENSES, getFromLocalStorage<ExpenseEntry>(STORAGE_KEYS.EXPENSES).filter(e => e.id !== id));
   notifyDataChange();
-  getUserId().then(uid => {
-    if (uid) supabase.from('expenses').delete().eq('id', id);
-  });
+  const uid = await getUserId();
+  if (uid) await supabase.from('expenses').delete().eq('id', id);
 }
 
 export function getGenderPreference(): 'boy' | 'girl' | 'none' | null {
