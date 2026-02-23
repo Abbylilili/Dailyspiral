@@ -1,10 +1,10 @@
 import type { FC } from 'react';
 import useExpenses from '@/app/services/supabase/hooks/useExpenses';
-import ExpenseHeader from './components/ExpenseHeader';
-import SummaryCards from './components/SummaryCards';
-import ExpenseCharts from './components/ExpenseCharts';
-import TransactionList from './components/TransactionList';
-import { getMonthExpenses, calculateTotals } from './utils/calculateStats';
+import ExpenseHeader from '@/app/pages/Expenses/components/ExpenseHeader/ExpenseHeader';
+import SummaryCards from '@/app/pages/Expenses/components/SummaryCards/SummaryCards';
+import ExpenseCharts from '@/app/pages/Expenses/components/ExpenseCharts/ExpenseCharts';
+import TransactionList from '@/app/pages/Expenses/components/TransactionList/TransactionList';
+import { getMonthExpenses, calculateTotals } from '@/app/pages/Expenses/utils/calculateStats/calculateStats';
 
 const Expenses: FC = () => {
   const { data: expenses, isLoading, addExpense, removeExpense } = useExpenses();

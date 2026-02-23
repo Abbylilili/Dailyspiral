@@ -1,1 +1,1 @@
-export { default as Mood } from './Mood';
+export { default as Mood } from '@/app/pages/Mood/Mood';
