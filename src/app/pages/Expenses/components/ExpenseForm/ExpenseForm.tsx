@@ -80,7 +80,9 @@ const ExpenseForm: FC<ExpenseFormProps> = ({ initialData, onSave, onClose }) => 
               {date ? format(parseISO(date), "PPP") : <span>Pick a date</span>}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 border-0"><Calendar mode="single" selected={parseISO(date)} onSelect={(d) => d && setDate(format(d, 'yyyy-MM-dd'))} initialFocus /></PopoverContent>
+          <PopoverContent className="w-auto p-0 border-0">
+            <Calendar mode="single" selected={parseISO(date)} onSelect={(d: Date | undefined) => d && setDate(format(d, 'yyyy-MM-dd'))} initialFocus />
+          </PopoverContent>
         </Popover>
       </div>
 

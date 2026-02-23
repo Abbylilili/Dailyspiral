@@ -2,7 +2,7 @@ import type { FC } from 'react';
 import { useState, useEffect } from 'react';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
 import { toast } from 'sonner';
-import { Calendar as CalendarIcon, TrendingUp, BarChart2 } from 'lucide-react';
+import { Calendar as CalendarIcon, TrendingUp } from 'lucide-react';
 import { ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, AreaChart, Area } from 'recharts';
 import useMoods from '@/app/pages/Mood/hooks/useMoods/useMoods';
 import MoodLogger from '@/app/pages/Mood/components/MoodLogger/MoodLogger';
@@ -16,11 +16,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/app/components/ui/pop
 import { Calendar } from '@/app/components/ui/calendar';
 import { cn } from '@/app/components/ui/utils';
 import { getMoodConfig } from '@/app/lib/moodConfig';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/app/components/ui/dialog';
+import { Dialog } from '@/app/components/ui/dialog';
 
 const Mood: FC = () => {
   const { theme } = useTheme();
-  const { data: moods, addMood, isLoading } = useMoods();
+  const { data: moods, addMood } = useMoods();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [mood, setMood] = useState(5);
   const [note, setNote] = useState("");
@@ -32,8 +32,8 @@ const Mood: FC = () => {
     [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].forEach(score => {
       const config = getMoodConfig(score);
       if (config.illustration) {
-        const imgBoy = new Image(); imgBoy.src = config.illustration.boy;
-        const imgGirl = new Image(); imgGirl.src = config.illustration.girl;
+        new Image().src = config.illustration.boy;
+        new Image().src = config.illustration.girl;
       }
     });
   }, []);
@@ -74,7 +74,9 @@ const Mood: FC = () => {
         <h2 className={cn("text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600")}>How are you?</h2>
         <Popover>
           <PopoverTrigger asChild><Button variant="outline" className="rounded-full h-12 w-12 p-0 border-0 shadow-sm"><CalendarIcon className="w-5 h-5" /></Button></PopoverTrigger>
-          <PopoverContent className="w-auto p-0 border-0 shadow-2xl" align="end"><Calendar mode="single" selected={selectedDate} onSelect={(d) => d && setSelectedDate(d)} initialFocus /></PopoverContent>
+          <PopoverContent className="w-auto p-0 border-0 shadow-2xl" align="end">
+            <Calendar mode="single" selected={selectedDate} onSelect={(d: Date | undefined) => d && setSelectedDate(d)} initialFocus />
+          </PopoverContent>
         </Popover>
       </div>
       
@@ -135,57 +137,59 @@ const Mood: FC = () => {
             </CardContent>
           </Card>
 
-          <Dialog open={isTrendOpen} onOpenChange={setIsTrendOpen}>
-            <DialogContent className="max-w-2xl bg-white/90 backdrop-blur-2xl border-0 rounded-[2.5rem] p-8 shadow-2xl">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-black tracking-tight mb-4 flex items-center gap-2">
-                  <TrendingUp className="text-purple-500" />
-                  Weekly Mood Analysis
-                </DialogTitle>
-              </DialogHeader>
-              <div className="h-[300px] w-full mt-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorMood" x1="0" y1="0" x2="0" y2="100%">
-                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
-                    <XAxis 
-                        dataKey="day" 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{fontSize: 12, fontWeight: '600', fill: '#6b7280'}}
-                        interval={0}
-                    />
-                    <YAxis domain={[0, 10]} axisLine={false} tickLine={false} tick={{fontSize: 12, fontWeight: '600', fill: '#6b7280'}} ticks={[0, 2, 4, 6, 8, 10]} />
-                    <Tooltip 
-                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', padding: '12px' }}
-                        itemStyle={{ fontWeight: 'bold', color: '#8b5cf6' }}
-                        cursor={{ stroke: '#8b5cf6', strokeWidth: 2, strokeDasharray: '5 5' }}
-                    />
-                    <Area 
-                        type="monotone" 
-                        dataKey="mood" 
-                        stroke="#8b5cf6" 
-                        strokeWidth={4} 
-                        fillOpacity={1} 
-                        fill="url(#colorMood)" 
-                        dot={{ r: 6, fill: '#8b5cf6', strokeWidth: 2, stroke: '#fff' }} 
-                        activeDot={{ r: 8, strokeWidth: 0 }}
-                        connectNulls
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+          <Dialog 
+            open={isTrendOpen} 
+            onOpenChange={setIsTrendOpen}
+            title={(
+              <div className="text-2xl font-black tracking-tight flex items-center gap-2">
+                <TrendingUp className="text-purple-500" />
+                Weekly Mood Analysis
               </div>
-              <div className="mt-6 p-4 bg-purple-50 rounded-2xl border border-purple-100">
-                <p className="text-sm text-purple-900 font-medium leading-relaxed">
-                  ✨ Your average mood this week is <span className="font-bold">{(moods.filter(m => weekDays.some(wd => format(wd, 'yyyy-MM-dd') === m.date)).reduce((acc, curr) => acc + curr.mood, 0) / (moods.filter(m => weekDays.some(wd => format(wd, 'yyyy-MM-dd') === m.date)).length || 1)).toFixed(1)}/10</span>. Keep tracking to see more insights!
-                </p>
-              </div>
-            </DialogContent>
+            )}
+            className="max-w-2xl"
+          >
+            <div className="h-[300px] w-full mt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorMood" x1="0" y1="0" x2="0" y2="100%">
+                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
+                  <XAxis 
+                      dataKey="day" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fontSize: 12, fontWeight: '600', fill: '#6b7280'}}
+                      interval={0}
+                  />
+                  <YAxis domain={[0, 10]} axisLine={false} tickLine={false} tick={{fontSize: 12, fontWeight: '600', fill: '#6b7280'}} ticks={[0, 2, 4, 6, 8, 10]} />
+                  <Tooltip 
+                      contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', padding: '12px' }}
+                      itemStyle={{ fontWeight: 'bold', color: '#8b5cf6' }}
+                      cursor={{ stroke: '#8b5cf6', strokeWidth: 2, strokeDasharray: '5 5' }}
+                  />
+                  <Area 
+                      type="monotone" 
+                      dataKey="mood" 
+                      stroke="#8b5cf6" 
+                      strokeWidth={4} 
+                      fillOpacity={1} 
+                      fill="url(#colorMood)" 
+                      dot={{ r: 6, fill: '#8b5cf6', strokeWidth: 2, stroke: '#fff' }} 
+                      activeDot={{ r: 8, strokeWidth: 0 }}
+                      connectNulls
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-6 p-4 bg-purple-50 rounded-2xl border border-purple-100">
+              <p className="text-sm text-purple-900 font-medium leading-relaxed">
+                ✨ Your average mood this week is <span className="font-bold">{(moods.filter(m => weekDays.some(wd => format(wd, 'yyyy-MM-dd') === m.date)).reduce((acc, curr) => acc + curr.mood, 0) / (moods.filter(m => weekDays.some(wd => format(wd, 'yyyy-MM-dd') === m.date)).length || 1)).toFixed(1)}/10</span>. Keep tracking to see more insights!
+              </p>
+            </div>
           </Dialog>
 
           <div className="space-y-4">

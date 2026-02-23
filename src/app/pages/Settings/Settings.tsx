@@ -3,7 +3,7 @@ import { Download, Trash2, Info, User, LogOut } from "lucide-react";
 import { supabase } from "@/app/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/app/components/ui/alert-dialog";
+import { AlertDialog } from "@/app/components/ui/alert-dialog";
 import { exportAllData, clearAllData } from "@/app/lib/storage";
 import { toast } from "sonner";
 import { useLanguage } from "@/app/contexts/LanguageContext";
@@ -201,32 +201,20 @@ export default function Settings() {
                 {t("settings.clearDesc")}
               </p>
             </div>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
+            <AlertDialog
+              trigger={
                 <Button variant="destructive" className={cn("flex items-center gap-2 w-full md:w-auto", theme === 'ink' && "bg-black text-white hover:bg-red-600")}>
                   <Trash2 className="w-4 h-4" />
                   {t("settings.clear")}
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className={cn(
-                  theme === 'ocean' ? "bg-slate-800 border-white/10 text-white" :
-                  theme === 'ink' ? "bg-white border-2 border-black rounded-xl" :
-                  "glass-card bg-white/90 backdrop-blur-xl"
-              )}>
-                <AlertDialogHeader>
-                  <AlertDialogTitle className={cn(theme === 'ocean' && "text-white")}>{t("settings.confirmClear")}</AlertDialogTitle>
-                  <AlertDialogDescription className={cn(theme === 'ocean' && "text-slate-400")}>
-                    {t("settings.confirmClearDesc")}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel className={cn(theme === 'ocean' && "bg-slate-700 text-white hover:bg-slate-600 border-0")}>{t("settings.cancel")}</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleClearData} className="bg-red-600 hover:bg-red-700">
-                    {t("settings.confirmClearButton")}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+              }
+              title={t("settings.confirmClear")}
+              description={t("settings.confirmClearDesc")}
+              cancelText={t("settings.cancel")}
+              actionText={t("settings.confirmClearButton")}
+              onAction={handleClearData}
+              actionClassName="bg-red-600 hover:bg-red-700"
+            />
           </div>
         </CardContent>
       </Card>
