@@ -61,6 +61,4 @@ Every component, hook, or utility must be encapsulated within its own folder:
 
 ### 3. Engineering Standards
 - **Type Safety**: No `any` allowed. Strictly typed interfaces for all data structures.
-- **UI Logic**: Pure data logic must be separated into hooks or utilities.
-- **Theme Support**: Every component must support all four themes: **Pastel, Ocean, Ink, and Zen**.
-
+- **UI Logic**: Pure data logic must be separated into hooks or 

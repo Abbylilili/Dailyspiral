@@ -32,7 +32,7 @@ export function WelcomeDialog() {
         </div>
       )}
       description={t("welcome.description")}
-      className="max-w-2xl max-h-[90vh] overflow-y-auto"
+      className="max-w-2xl max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
     >
       <div className="space-y-6 py-4">
         {/* Features */}
