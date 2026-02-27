@@ -5,6 +5,7 @@ import { Home } from "@/app/pages/Home";
 import { Expenses } from "@/app/pages/Expenses";
 import { Mood } from "@/app/pages/Mood";
 import { Habits } from "@/app/pages/Habits";
+import DailyPlan from "@/app/pages/DailyPlan";
 import { Insights } from "@/app/pages/Insights";
 import { Settings } from "@/app/pages/Settings";
 import { NotFound } from "@/app/pages/NotFound";
@@ -19,7 +20,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
@@ -33,12 +33,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  // During initial load, we still render children to prevent white flash.
-  // The children (Layout) will handle their own data loading states.
   if (loading) return <>{children}</>; 
-  
   if (!session) return <Navigate to="/login" replace />;
-
   return <>{children}</>;
 }
 
@@ -73,6 +69,7 @@ export const router = createBrowserRouter([
           { path: "expenses", Component: Expenses },
           { path: "mood", Component: Mood },
           { path: "habits", Component: Habits },
+          { path: "plan", Component: DailyPlan },
           { path: "insights", Component: Insights },
           { path: "settings", Component: Settings },
           { path: "*", Component: NotFound },

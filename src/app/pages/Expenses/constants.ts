@@ -1,10 +1,10 @@
 export const CATEGORIES = [
-  { value: "food", label: "🍜 Food", color: "#FF9F1C" },
-  { value: "transport", label: "🚗 Transport", color: "#2EC4B6" },
-  { value: "shopping", label: "🛍️ Shopping", color: "#FF5400" },
-  { value: "entertainment", label: "🎬 Entertainment", color: "#CBF3F0" },
-  { value: "health", label: "💊 Health", color: "#2B2D42" },
-  { value: "other", label: "📦 Other", color: "#8D99AE" },
+  { value: "food", label: "Food", icon: "🍜", color: "#FF9F1C" },
+  { value: "transport", label: "Transport", icon: "🚗", color: "#2EC4B6" },
+  { value: "shopping", label: "Shopping", icon: "🛍️", color: "#FF5400" },
+  { value: "entertainment", label: "Entertainment", icon: "🎬", color: "#CBF3F0" },
+  { value: "health", label: "Health", icon: "💊", color: "#2B2D42" },
+  { value: "other", label: "Other", icon: "📦", color: "#8D99AE" },
 ];
 
 export const PASTEL_COLORS = ["#FFB5A7", "#FCD5CE", "#F8EDEB", "#F9DCC4", "#FEC89A", "#9BF6FF", "#A0C4FF", "#BDB2FF", "#FFC6FF", "#CAFFBF", "#FDFFB6"];

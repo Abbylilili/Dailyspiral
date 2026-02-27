@@ -1,101 +1,76 @@
 import type { FC } from 'react';
 import { Card, CardContent } from "@/app/components/ui/card";
-import { Slider } from "@/app/components/ui/slider";
-import { Textarea } from "@/app/components/ui/textarea";
 import { Button } from "@/app/components/ui/button";
-import { getMoodConfig } from "@/app/lib/moodConfig";
+import { Textarea } from "@/app/components/ui/textarea";
+import { Smile, Save } from "lucide-react";
 import { useTheme } from "@/app/contexts/ThemeContext";
+import { useLanguage } from "@/app/contexts/LanguageContext";
 import { cn } from "@/app/components/ui/utils";
-import type { Gender } from "@/app/lib/storage";
+import { getMoodConfig } from "@/app/lib/moodConfig";
 
 interface MoodLoggerProps {
   mood: number;
   note: string;
-  gender: Gender;
-  onMoodChange: (val: number) => void;
-  onNoteChange: (val: string) => void;
-  onSave: () => void;
+  gender: 'boy' | 'girl';
+  onMoodChange: (mood: number) => void;
+  onNoteChange: (note: string) => void;
+  onSave: () => Promise<void>;
 }
 
 const MoodLogger: FC<MoodLoggerProps> = ({ mood, note, gender, onMoodChange, onNoteChange, onSave }) => {
   const { theme } = useTheme();
-  const config = getMoodConfig(mood);
+  const { t } = useLanguage();
+  const moodConfig = getMoodConfig(mood);
 
   return (
-    <Card className={cn("border-0 overflow-hidden relative flex-1 min-h-[420px] transition-all", 
-        theme === 'ocean' ? "bg-slate-800/50 text-slate-100" : "glass-card bg-white/70 backdrop-blur-xl shadow-xl"
-    )}>
-      <div className={cn("absolute inset-0 opacity-10 transition-colors duration-500", config.color)} />
-      
-      <CardContent className="pt-12 pb-10 px-10 flex flex-col items-center text-center relative z-10 h-full justify-center">
-        <div className="mb-8 transform transition-transform duration-500 hover:scale-105">
-          {config.illustration ? (
-            <div className={cn("w-56 h-56 overflow-hidden shadow-2xl relative group", theme === 'ink' ? "rounded-2xl border-4 border-black" : "rounded-[3rem] ring-8 ring-white/20")}>
-              <img src={config.illustration[gender]} alt={config.label} className="w-full h-full object-cover saturate-125" />
+    <Card className={cn("p-8 rounded-[2.5rem] border-0 shadow-xl", 
+        theme === 'ocean' ? "bg-slate-800/50 text-white" : 
+        theme === 'zen' ? "bg-white" : 
+        theme === 'ink' ? "bg-white border-2 border-black" : 
+        "bg-white/80")}>
+      <CardContent className="p-0 space-y-8">
+        <div className="flex flex-col items-center gap-6">
+          <div className="flex items-center gap-2 self-start">
+            <Smile className="w-5 h-5 text-yellow-500" />
+            <h3 className="font-black text-xl uppercase tracking-tighter">{t("mood.howAreYou")}</h3>
+          </div>
+          
+          <div className="flex flex-col items-center w-full">
+            <div className={cn("w-32 h-32 rounded-full overflow-hidden shadow-2xl border-4 transition-all duration-500 mb-4 bg-white/10", moodConfig.color.replace('bg-', 'bg-opacity-20 bg-'))}>
+              {moodConfig.illustration ? (
+                <img src={moodConfig.illustration[gender]} className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-700" alt="Mood" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-5xl">{moodConfig.emoji}</div>
+              )}
             </div>
-          ) : (
-            <div className="text-[8rem] filter drop-shadow-2xl">{config.emoji}</div>
-          )}
-        </div>
-        
-        <h3 className={cn("text-2xl font-bold mb-8", theme === 'ocean' ? "text-white" : "text-gray-800")}>{config.label}</h3>
+            <div className="text-4xl font-black tracking-tighter">{mood}/10</div>
+            <p className="text-xs font-bold opacity-50 uppercase mt-1 tracking-widest">{t(moodConfig.label)}</p>
+          </div>
 
-        <div className="w-full px-6 mb-8">
-          <style>
-            {`
-              .neon-thumb {
-                position: relative;
-                z-index: 10;
-                border: 2px solid ${theme === 'ink' ? '#000' : theme === 'ocean' ? '#fff' : '#e5e7eb'} !important;
-                transition: all 0.2s ease;
-              }
-              .neon-thumb:hover {
-                background-color: transparent !important;
-                border-color: transparent !important;
-                transform: scale(1.5);
-              }
-              .neon-thumb:hover::after {
-                content: "⭐️";
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -55%);
-                font-size: 16px;
-              }
-            `}
-          </style>
-          <Slider 
-            value={[mood]} 
-            onValueChange={(v) => onMoodChange(v[0])} 
-            min={1} 
-            max={10} 
-            step={1} 
-            className="w-full"
-            rangeClassName={cn(
-                theme === 'ocean' ? "bg-gradient-to-r from-pink-500 to-purple-600" :
-                "bg-gradient-to-r from-pink-500 to-purple-600"
-            )}
-            trackClassName={theme === 'ocean' ? "bg-slate-700" : ""}
-            thumbClassName="neon-thumb w-6 h-6 bg-white shadow-lg"
-          />
-          <div className="flex justify-between text-xs mt-2 opacity-40 font-bold">
-            <span>Very Bad</span>
-            <span>Excellent</span>
+          <div className="w-full space-y-4">
+            <div className="flex justify-between items-center px-2">
+              <span className="text-[10px] font-black uppercase opacity-40">{t("mood.veryBad")}</span>
+              <span className="text-[10px] font-black uppercase opacity-40">{t("mood.excellent")}</span>
+            </div>
+            <input 
+              type="range" min="1" max="10" step="1" value={mood} onChange={(e) => onMoodChange(parseInt(e.target.value))}
+              className={cn("w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-black", theme === 'ocean' && "bg-slate-700")}
+            />
           </div>
         </div>
 
-        <div className="w-full space-y-4">
-          <Textarea
-            placeholder="How are you feeling today?"
-            value={note}
-            onChange={(e) => onNoteChange(e.target.value)}
-            rows={2}
-            className={cn("border-0 resize-none text-center text-lg p-4 rounded-2xl",
-                theme === 'ocean' ? "bg-slate-900/50 text-white" : "bg-white/50"
-            )}
-          />
-          <Button onClick={onSave} className={cn("w-full h-14 text-xl font-bold rounded-2xl shadow-lg transition-all active:scale-[0.98]")}>Save Record</Button>
+        <div className="space-y-3">
+          <label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t("mood.addNote")}</label>
+          <Textarea 
+            placeholder={t("mood.placeholder")} value={note} onChange={(e) => onNoteChange(e.target.value)}
+            className={cn("min-h-[120px] rounded-2xl border-0 font-bold p-4 resize-none focus-visible:ring-2 focus-visible:ring-black/5", 
+                theme === 'ocean' ? "bg-slate-900/50" : "bg-slate-50")}/>
         </div>
+
+        <Button onClick={onSave} className="w-full h-14 bg-black hover:bg-gray-800 text-white rounded-full font-black text-xs tracking-widest uppercase shadow-xl transition-all hover:scale-[1.02] active:scale-95">
+          <Save className="w-4 h-4 mr-2" />
+          {t("mood.saveRecord")}
+        </Button>
       </CardContent>
     </Card>
   );

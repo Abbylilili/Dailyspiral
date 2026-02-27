@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Dialog } from "@/app/components/ui/dialog";
 import { useTheme } from "@/app/contexts/ThemeContext";
+import { useLanguage } from "@/app/contexts/LanguageContext";
 import { cn } from "@/app/components/ui/utils";
 import ExpenseForm from '@/app/pages/Expenses/components/ExpenseForm';
 import type { ExpenseEntry } from "@/app/lib/storage";
@@ -14,36 +15,34 @@ interface ExpenseHeaderProps {
 
 const ExpenseHeader: FC<ExpenseHeaderProps> = ({ onAdd }) => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
 
   const getButtonClass = () => {
-      switch(theme) {
-          case 'ocean': return "bg-cyan-500 text-slate-900 hover:bg-cyan-400";
-          case 'ink': return "bg-black text-white hover:bg-gray-800 border-2 border-transparent active:border-black rounded-lg";
-          default: return "bg-black text-white hover:bg-gray-800 shadow-lg";
-      }
+      // Standardized black button for consistency
+      return "bg-black hover:bg-gray-800 text-white rounded-full h-12 px-8 shadow-lg transition-all hover:scale-105 active:scale-95 font-black text-xs tracking-widest uppercase";
   };
 
   return (
     <div className="flex items-center justify-between">
-      <h2 className={cn("text-4xl font-bold bg-clip-text text-transparent",
+      <h2 className={cn("text-4xl font-black tracking-tighter uppercase bg-clip-text text-transparent",
           theme === 'ocean' ? "bg-gradient-to-r from-cyan-400 to-blue-500" :
-          theme === 'ink' ? "text-black font-['Rubik_Dirt'] tracking-wider" :
+          theme === 'ink' ? "text-black" :
           theme === 'zen' ? "bg-gradient-to-r from-emerald-600 to-teal-600" :
           "bg-gradient-to-r from-purple-600 to-pink-600"
-      )}>Expenses</h2>
+      )}>{t("nav.expenses")}</h2>
       
       <Dialog 
         open={isOpen} 
         onOpenChange={setIsOpen}
         trigger={
-          <Button className={cn("relative flex items-center justify-center rounded-full h-12 px-6 transition-transform active:scale-95 w-48", getButtonClass())}>
+          <Button className={cn("relative flex items-center justify-center transition-all w-48", getButtonClass())}>
             <Plus className="absolute left-5 w-5 h-5" />
-            <span>Add Record</span>
+            <span>{t("expenses.addRecord").toUpperCase()}</span>
           </Button>
         }
-        title="Add Transaction"
-        description="Record your income or expense"
+        title={t("expenses.addRecord")}
+        description={t("expenses.subtitle")}
         className="max-w-md"
       >
         <ExpenseForm onSave={onAdd} onClose={() => setIsOpen(false)} />

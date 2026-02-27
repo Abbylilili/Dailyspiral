@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { ResponsiveContainer, PieChart, Pie, Cell, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import { useTheme } from "@/app/contexts/ThemeContext";
+import { useLanguage } from "@/app/contexts/LanguageContext";
 import { cn } from "@/app/components/ui/utils";
 import type { ExpenseEntry } from "@/app/lib/storage";
 import { CATEGORIES, getChartColor } from '@/app/pages/Expenses/constants';
@@ -19,6 +20,7 @@ interface ExpenseChartsProps {
 
 const ExpenseCharts: FC<ExpenseChartsProps> = ({ expenses, thisMonthExpenses }) => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [hoveredCategory, setHoveredCategory] = useState<any>(null);
 
   const categoryMap = new Map<string, { value: number, color: string, label: string }>();
@@ -41,37 +43,41 @@ const ExpenseCharts: FC<ExpenseChartsProps> = ({ expenses, thisMonthExpenses }) 
      switch(theme) {
          case 'ocean': return "bg-slate-800/50 border-0 text-white backdrop-blur-xl shadow-xl";
          case 'ink': return "bg-white border-2 border-black text-black shadow-[6px_6px_0px_0px_black] rounded-xl";
-         default: return "glass-card border-0 rounded-[2rem]";
+         default: return "glass-card border-0 rounded-[2.5rem]";
      }
   };
 
   return (
-    <div className="grid md:grid-cols-2 gap-4">
+    <div className="grid md:grid-cols-2 gap-6">
       <Card className={cn("hover:shadow-xl transition-all duration-300", getCardClass())}>
-        <CardHeader className="pb-0"><CardTitle className={cn(theme === 'ocean' && "text-white")}>Spending by Category</CardTitle></CardHeader>
-        <CardContent>
-          <div className="relative h-[250px] w-full">
+        <CardHeader className="pb-2">
+          <CardTitle className={cn("font-black uppercase tracking-tighter text-lg", theme === 'ocean' && "text-white")}>
+            {t("expenses.categoryBreakdown")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="relative h-[280px] w-full">
             <PandaAnimation /><DaisyAnimation /><BambooAnimation /><ZenRainAnimation /><WaveAnimation />
             
             {hoveredCategory && (
-                <div className={cn("absolute top-0 right-0 z-20 p-3 rounded-xl shadow-lg border backdrop-blur-sm animate-in fade-in zoom-in-95", theme === 'ocean' ? "bg-slate-800/90 border-slate-700 text-white" : "bg-white/90 border-gray-100 text-gray-800")}>
+                <div className={cn("absolute top-0 right-0 z-20 p-4 rounded-2xl shadow-2xl border backdrop-blur-md animate-in fade-in zoom-in-95", theme === 'ocean' ? "bg-slate-800/90 border-slate-700 text-white" : "bg-white/90 border-gray-100 text-gray-800")}>
                     <div className="flex items-center gap-2 mb-1">
                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: hoveredCategory.color }} />
-                        <span className="text-sm font-semibold">{hoveredCategory.name}</span>
+                        <span className="text-xs font-black uppercase tracking-wider">{hoveredCategory.name}</span>
                     </div>
-                    <div className="text-xl font-bold">${Number(hoveredCategory.value).toFixed(2)}</div>
-                    <div className={cn("text-xs mt-0.5", theme === 'ocean' ? "text-slate-400" : "text-gray-500")}>
-                        {((hoveredCategory.value / (expenses.reduce((acc, curr) => acc + curr.amount, 0) || 1)) * 100).toFixed(1)}% of total
+                    <div className="text-2xl font-black">${Number(hoveredCategory.value).toFixed(2)}</div>
+                    <div className={cn("text-[10px] font-bold mt-1 opacity-60 uppercase", theme === 'ocean' ? "text-slate-400" : "text-gray-500")}>
+                        {((hoveredCategory.value / (thisMonthExpenses.filter(ex => ex.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0) || 1)) * 100).toFixed(1)}% of total
                     </div>
                 </div>
             )}
 
             <ResponsiveContainer width="100%" height="100%" className="z-10 relative">
               <PieChart>
-                <Pie data={categoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={70} outerRadius={90} paddingAngle={5} stroke={theme === 'ocean' ? "rgba(0,0,0,0)" : "#fff"} onMouseEnter={(data) => setHoveredCategory(data)} onMouseLeave={() => setHoveredCategory(null)}>
-                  {categoryData.map((entry, index) => ( <Cell key={`cell-${index}`} fill={entry.color} stroke="none" /> ))}
+                <Pie data={categoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={75} outerRadius={95} paddingAngle={4} stroke="none" onMouseEnter={(data) => setHoveredCategory(data)} onMouseLeave={() => setHoveredCategory(null)}>
+                  {categoryData.map((entry, index) => ( <Cell key={`cell-${index}`} fill={entry.color} /> ))}
                 </Pie>
-                <Legend verticalAlign="bottom" height={36} iconType="circle" formatter={(value) => <span className={cn("text-xs font-medium ml-1", theme === 'ocean' ? "text-slate-400" : "text-gray-500")}>{value}</span>} />
+                <Legend verticalAlign="bottom" height={36} iconType="circle" formatter={(value) => <span className={cn("text-[10px] font-black uppercase tracking-widest ml-1", theme === 'ocean' ? "text-slate-400" : "text-gray-500")}>{value}</span>} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -79,15 +85,19 @@ const ExpenseCharts: FC<ExpenseChartsProps> = ({ expenses, thisMonthExpenses }) 
       </Card>
 
       <Card className={cn("hover:shadow-xl transition-all duration-300", getCardClass())}>
-        <CardHeader className="pb-0"><CardTitle className={cn(theme === 'ocean' && "text-white")}>Spending Details</CardTitle></CardHeader>
-        <CardContent>
+        <CardHeader className="pb-2">
+          <CardTitle className={cn("font-black uppercase tracking-tighter text-lg", theme === 'ocean' && "text-white")}>
+            {t("expenses.transactions").toUpperCase()}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-10">
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={categoryData}>
+            <BarChart data={categoryData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'ocean' ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)"} />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tickFormatter={(val) => val.split(' ')[0]} tick={{ fill: theme === 'ocean' ? '#94a3b8' : '#666' }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: theme === 'ocean' ? '#94a3b8' : '#666' }} />
-              <Tooltip cursor={{fill: theme === 'ocean' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', backgroundColor: theme === 'ocean' ? '#1e293b' : '#fff', color: theme === 'ocean' ? '#fff' : '#000' }} />
-              <Bar dataKey="value" radius={[6, 6, 0, 0]}>{categoryData.map((entry, index) => ( <Cell key={`cell-${index}`} fill={entry.color} /> ))}</Bar>
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tickFormatter={(val) => val.split(' ')[0]} tick={{ fill: theme === 'ocean' ? '#94a3b8' : '#64748b', fontSize: 12, fontWeight: '900' }} dy={10} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: theme === 'ocean' ? '#94a3b8' : '#64748b', fontSize: 11, fontWeight: '900' }} width={50} />
+              <Tooltip cursor={{fill: theme === 'ocean' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', backgroundColor: theme === 'ocean' ? '#1e293b' : '#fff', color: theme === 'ocean' ? '#fff' : '#000' }} itemStyle={{ fontWeight: '900', fontSize: '12px' }} />
+              <Bar dataKey="value" radius={[6, 6, 6, 6]} barSize={32}>{categoryData.map((entry, index) => ( <Cell key={`cell-${index}`} fill={entry.color} /> ))}</Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>

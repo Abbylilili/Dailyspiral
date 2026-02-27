@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router";
-import { Home, Wallet, Heart, CheckSquare, TrendingUp, Settings, Languages, Palette, LogOut, User } from "lucide-react";
+import { Home, Wallet, Heart, CheckSquare, Calendar, TrendingUp, Settings, Languages, Palette, LogOut, User } from "lucide-react";
 import { supabase } from "@/app/lib/supabase";
 import { useState, useEffect } from "react";
 import { cn } from "@/app/components/ui/utils";
@@ -38,6 +38,7 @@ export function Layout() {
   
   const navItems = [
     { path: "/", icon: Home, label: t("nav.home") },
+    { path: "/plan", icon: Calendar, label: t("nav.plan") },
     { path: "/expenses", icon: Wallet, label: t("nav.expenses") },
     { path: "/mood", icon: Heart, label: t("nav.mood") },
     { path: "/habits", icon: CheckSquare, label: t("nav.habits") },
@@ -65,13 +66,13 @@ export function Layout() {
       switch(theme) {
           case 'ocean': return "bg-slate-900 text-slate-100";
           case 'ink': return "bg-white text-black";
-          case 'zen': return "bg-transparent text-slate-800"; // Background handled by FloatingBubbles variant="zen"
-          default: return "text-gray-900"; // Pastel background handled via inline style
+          case 'zen': return "bg-transparent text-slate-800"; 
+          default: return "text-gray-900"; 
       }
   };
 
   const pastelStyle = {
-      backgroundColor: 'transparent', // Make transparent to reveal FloatingBubbles
+      backgroundColor: 'transparent', 
       backgroundImage: 'none',
   };
 
@@ -131,7 +132,7 @@ export function Layout() {
             </Link>
             
             {/* Desktop Navigation */}
-            <nav className={cn("hidden md:flex items-center gap-1 p-1 rounded-full backdrop-blur-md", 
+            <nav className={cn("hidden md:flex items-center gap-0.5 p-1 rounded-full backdrop-blur-md", 
                 theme === 'ocean' ? "bg-slate-800/50" : 
                 theme === 'ink' ? "bg-transparent border border-black rounded-lg p-0 gap-0 overflow-hidden" :
                 "bg-black/5"
@@ -159,7 +160,7 @@ export function Layout() {
                     key={item.path}
                     to={item.path}
                     className={cn(
-                      "flex items-center gap-2 px-4 py-2 transition-all font-medium text-sm",
+                      "flex items-center gap-1.5 px-3 py-2 transition-all font-medium text-sm",
                       theme !== 'ink' && "rounded-full",
                       isActive ? activeClass : inactiveClass
                     )}
@@ -177,7 +178,6 @@ export function Layout() {
                 {formattedDate}
               </div>
               
-              {/* Theme Switcher */}
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className={cn("rounded-full w-10 h-10 transition-all", 
@@ -198,27 +198,14 @@ export function Layout() {
                     <DropdownMenuLabel>Color Theme</DropdownMenuLabel>
                     <DropdownMenuSeparator className={theme === 'ocean' ? "bg-white/10" : ""} />
                     <DropdownMenuRadioGroup value={theme} onValueChange={(v) => setTheme(v as Theme)}>
-                        <DropdownMenuRadioItem value="pastel" className={cn(theme === 'ocean' ? "focus:bg-slate-700 focus:text-white" : "")}>
-                            <span className="w-3 h-3 rounded-full bg-gradient-to-br from-pink-200 to-purple-200 mr-2 border"/> 
-                            Pastel
-                        </DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="ocean" className={cn(theme === 'ocean' ? "focus:bg-slate-700 focus:text-white" : "")}>
-                            <span className="w-3 h-3 rounded-full bg-slate-800 mr-2 border border-cyan-500"/>
-                            Ocean
-                        </DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="ink" className={cn(theme === 'ocean' ? "focus:bg-slate-700 focus:text-white" : "")}>
-                            <span className="w-3 h-3 rounded-full bg-white mr-2 border-2 border-black"/>
-                            Ink
-                        </DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="zen" className={cn(theme === 'ocean' ? "focus:bg-slate-700 focus:text-white" : "focus:bg-[#dcfce7] focus:text-[#166534]")}>
-                            <span className="w-3 h-3 rounded-full bg-[#dcfce7] mr-2 border border-[#166534]"/>
-                            Zen
-                        </DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="pastel">Pastel</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="ocean">Ocean</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="ink">Ink</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="zen">Zen</DropdownMenuRadioItem>
                     </DropdownMenuRadioGroup>
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Language Switcher */}
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className={cn("rounded-full w-10 h-10 transition-all", 
@@ -235,33 +222,11 @@ export function Layout() {
                     theme === 'ink' ? "bg-white border-2 border-black rounded-lg shadow-[4px_4px_0px_0px_black]" :
                     "glass-card rounded-xl border-0"
                 )}>
-                  <DropdownMenuItem 
-                    onClick={() => setLanguage("en")}
-                    className={cn("rounded-lg focus:bg-black/5", 
-                        language === "en" && (theme === 'ocean' ? "bg-slate-700" : "bg-black/5 font-medium"),
-                        theme === 'ocean' && "focus:bg-slate-700"
-                    )}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span className="text-lg">🇺🇸</span>
-                      English
-                    </span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => setLanguage("zh")}
-                    className={cn("rounded-lg focus:bg-black/5", 
-                        language === "zh" && (theme === 'ocean' ? "bg-slate-700" : "bg-black/5 font-medium"),
-                        theme === 'ocean' && "focus:bg-slate-700"
-                    )}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span className="text-lg">🇨🇳</span>
-                      中文
-                    </span>
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLanguage("en")}>English</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLanguage("zh")}>中文</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              {/* User Profile & Logout */}
+
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className={cn("rounded-full w-10 h-10 transition-all", 
@@ -280,16 +245,10 @@ export function Layout() {
                     "glass-card rounded-xl border-0"
                 )}>
                     <DropdownMenuLabel>Account</DropdownMenuLabel>
-                    <div className="px-2 pb-2 text-xs opacity-60 truncate">
-                        {user?.email}
-                    </div>
+                    <div className="px-2 pb-2 text-xs opacity-60 truncate">{user?.email}</div>
                     <DropdownMenuSeparator className={theme === 'ocean' ? "bg-white/10" : ""} />
-                    <DropdownMenuItem 
-                        onClick={handleSignOut}
-                        className={cn("text-red-500 focus:text-red-600 focus:bg-red-50", theme === 'ocean' && "focus:bg-red-900/30")}
-                    >
-                        <LogOut className="w-4 h-4 mr-2" />
-                        Sign Out
+                    <DropdownMenuItem onClick={handleSignOut} className="text-red-500">
+                        <LogOut className="w-4 h-4 mr-2" /> Sign Out
                     </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -309,29 +268,13 @@ export function Layout() {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
-            
-            let activeClass = "text-white bg-black shadow-lg scale-110";
-            let inactiveClass = "text-muted-foreground hover:text-foreground hover:bg-black/5";
-
-            if (theme === 'ocean') {
-                activeClass = "text-white bg-cyan-600 shadow-[0_0_15px_rgba(8,145,178,0.5)] scale-110";
-                inactiveClass = "text-slate-400 hover:text-white";
-            } else if (theme === 'ink') {
-                activeClass = "text-white bg-black rounded-lg scale-100";
-                inactiveClass = "text-black hover:bg-gray-100";
-            } else if (theme === 'zen') {
-                activeClass = "text-[#166534] bg-[#dcfce7] rounded-xl shadow-sm scale-105";
-                inactiveClass = "text-gray-400 hover:text-gray-600";
-            }
-
             return (
               <Link
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "flex flex-col items-center gap-1 w-12 h-12 justify-center rounded-2xl transition-all",
-                  theme === 'ink' && "rounded-lg",
-                  isActive ? activeClass : inactiveClass
+                  "flex flex-col items-center gap-1 w-12 h-12 justify-center rounded-2xl transition-all shadow-sm",
+                  isActive ? "text-white bg-black scale-110 shadow-lg" : "text-slate-400 hover:bg-black/5"
                 )}
               >
                 <Icon className="w-5 h-5" />

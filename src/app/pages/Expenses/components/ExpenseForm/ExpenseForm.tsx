@@ -10,6 +10,7 @@ import { format, parseISO } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/app/components/ui/utils";
 import { useTheme } from "@/app/contexts/ThemeContext";
+import { useLanguage } from "@/app/contexts/LanguageContext";
 import type { ExpenseEntry } from "@/app/lib/storage";
 import { CATEGORIES } from '@/app/pages/Expenses/constants';
 
@@ -21,6 +22,7 @@ interface ExpenseFormProps {
 
 const ExpenseForm: FC<ExpenseFormProps> = ({ initialData, onSave, onClose }) => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [amount, setAmount] = useState(initialData?.amount.toString() || "");
   const [category, setCategory] = useState(initialData?.category || "food");
   const [customCategory, setCustomCategory] = useState("");
@@ -42,51 +44,63 @@ const ExpenseForm: FC<ExpenseFormProps> = ({ initialData, onSave, onClose }) => 
     onClose();
   };
 
-  const getInputClass = () => theme === 'ocean' ? "bg-slate-900/60 border-0 text-white rounded-xl" : "bg-white/50 border-0 rounded-xl";
+  const getInputClass = () => theme === 'ocean' ? "bg-slate-900/60 border-0 text-white rounded-xl" : "bg-white/50 border-0 rounded-xl shadow-inner";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5 mt-2">
-      <div className="space-y-2">
-        <Label>Type</Label>
-        <div className={cn("flex p-1 rounded-xl", theme === 'ocean' ? "bg-slate-900" : "bg-gray-100")}>
-          <button type="button" onClick={() => setType('expense')} className={cn("flex-1 py-2 rounded-lg text-sm font-medium transition-all", type === 'expense' ? "bg-white shadow-sm text-red-600" : "opacity-50")}>Expense</button>
-          <button type="button" onClick={() => setType('income')} className={cn("flex-1 py-2 rounded-lg text-sm font-medium transition-all", type === 'income' ? "bg-white shadow-sm text-green-600" : "opacity-50")}>Income</button>
+    <form onSubmit={handleSubmit} className="space-y-5 mt-4">
+      <div className="space-y-1">
+        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t("expenses.type")}</Label>
+        <div className={cn("flex p-1 rounded-xl", theme === 'ocean' ? "bg-slate-900" : "bg-slate-100")}>
+          <button type="button" onClick={() => setType('expense')} className={cn("flex-1 py-2 rounded-lg text-xs font-black uppercase transition-all", type === 'expense' ? "bg-white shadow-sm text-red-600" : "opacity-50 text-slate-500")}>
+            {t("expenses.expense")}
+          </button>
+          <button type="button" onClick={() => setType('income')} className={cn("flex-1 py-2 rounded-lg text-xs font-black uppercase transition-all", type === 'income' ? "bg-white shadow-sm text-green-600" : "opacity-50 text-slate-500")}>
+            {t("expenses.income")}
+          </button>
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label>Amount ($)</Label>
-        <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required className={cn("text-2xl h-14 text-center font-bold", getInputClass())} />
+      <div className="space-y-1">
+        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t("expenses.amount")}</Label>
+        <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required className={cn("text-2xl h-14 text-center font-black tracking-tighter", getInputClass())} placeholder="0.00" />
       </div>
 
-      <div className="space-y-2">
-        <Label>Category</Label>
+      <div className="space-y-1">
+        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t("expenses.category")}</Label>
         <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger className={cn("h-12", getInputClass())}><SelectValue /></SelectTrigger>
-          <SelectContent className={theme === 'ocean' ? "bg-slate-800 text-white" : ""}>
-            {CATEGORIES.map(cat => ( <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem> ))}
-            <SelectItem value="custom">✏️ Custom...</SelectItem>
+          <SelectTrigger className={cn("h-12 font-bold", getInputClass())}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className={theme === 'ocean' ? "bg-slate-800 text-white border-white/10" : "rounded-xl border-0 shadow-2xl"}>
+            {CATEGORIES.map(cat => ( 
+              <SelectItem key={cat.value} value={cat.value} className="font-bold">
+                {cat.icon} {t(`category.${cat.value}`)}
+              </SelectItem> 
+            ))}
+            <SelectItem value="custom" className="font-bold text-blue-600">✏️ {t("common.custom")}...</SelectItem>
           </SelectContent>
         </Select>
-        {category === "custom" && <Input placeholder="Enter category name" value={customCategory} onChange={(e) => setCustomCategory(e.target.value)} className={cn("h-12 mt-2", getInputClass())} autoFocus />}
+        {category === "custom" && <Input placeholder={t("expenses.category")} value={customCategory} onChange={(e) => setCustomCategory(e.target.value)} className={cn("h-12 mt-2 font-bold", getInputClass())} autoFocus />}
       </div>
 
-      <div className="space-y-2">
-        <Label>Date</Label>
+      <div className="space-y-1">
+        <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t("expenses.date")}</Label>
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" className={cn("w-full h-12 justify-start font-normal", getInputClass())}>
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {date ? format(parseISO(date), "PPP") : <span>Pick a date</span>}
+            <Button variant="outline" className={cn("w-full h-12 justify-start font-bold", getInputClass())}>
+              <CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
+              {date ? format(parseISO(date), "PPP") : <span>{t("mood.selectDate")}</span>}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 border-0">
+          <PopoverContent className="w-auto p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
             <Calendar mode="single" selected={parseISO(date)} onSelect={(d: Date | undefined) => d && setDate(format(d, 'yyyy-MM-dd'))} initialFocus />
           </PopoverContent>
         </Popover>
       </div>
 
-      <Button type="submit" className="w-full h-14 rounded-2xl text-lg font-bold shadow-lg">Save Transaction</Button>
+      <Button type="submit" className="w-full h-14 bg-black hover:bg-gray-800 text-white rounded-2xl font-black text-xs tracking-widest uppercase shadow-xl mt-4 transition-all hover:scale-[1.02] active:scale-95">
+        {t("expenses.save").toUpperCase()}
+      </Button>
     </form>
   );
 };

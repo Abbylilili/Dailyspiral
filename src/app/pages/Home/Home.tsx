@@ -5,10 +5,11 @@ import QuickEntryMood from '@/app/pages/Home/components/QuickEntryMood/QuickEntr
 import QuickEntryExpense from '@/app/pages/Home/components/QuickEntryExpense/QuickEntryExpense';
 import TodayHabits from '@/app/pages/Home/components/TodayHabits/TodayHabits';
 import SummaryCard from '@/app/pages/Home/components/SummaryCard/SummaryCard';
-import { cn } from '@/app/components/ui/utils';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 const Home: FC = () => {
   const { moods, habits, expenses, refresh, toggleHabit, today } = useHomeData();
+  const { t } = useLanguage();
 
   const todayMood = moods.find(m => m.date === today);
   const thisMonthExpenses = (expenses || []).filter(e => {
@@ -41,20 +42,20 @@ const Home: FC = () => {
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-4">
         <SummaryCard 
-          title="Monthly Spending" 
+          title={t("home.expenses")} 
           value={`$${monthTotal.toFixed(0)}`} 
           linkTo="/expenses" 
           type="expense" 
         />
         <SummaryCard 
-          title="Today's Progress" 
+          title={t("home.habits")} 
           value={`${habitProgress.toFixed(0)}%`} 
           linkTo="/habits" 
           type="habit" 
         />
         <SummaryCard 
-          title="Click to View" 
-          value="Explore Insights ✨" 
+          title={t("nav.insights")} 
+          value={t("insights.generateReport")} 
           linkTo="/insights" 
           type="insight" 
         />

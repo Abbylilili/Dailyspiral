@@ -1,115 +1,90 @@
 import type { FC } from 'react';
 import { useState } from 'react';
-import { Card } from "@/app/components/ui/card";
+import { Card, CardContent } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
-import { Input } from "@/app/components/ui/input";
-import { Label } from "@/app/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select";
-import { Wallet, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useTheme } from "@/app/contexts/ThemeContext";
+import { useLanguage } from "@/app/contexts/LanguageContext";
 import { cn } from "@/app/components/ui/utils";
+import { CATEGORIES } from '@/app/pages/Expenses/constants';
 import { saveExpense } from "@/app/lib/storage";
 import { toast } from "sonner";
 
 interface QuickEntryExpenseProps {
   date: string;
-  onRefresh: () => void;
+  onRefresh?: () => void;
 }
-
-const CATEGORIES = [
-  {value:"rent", label:"🏠 Rent"},
-  { value: "food", label: "🍜 Food" },
-  { value: "transport", label: "🚗 Transport" },
-  { value: "shopping", label: "🛍️ Shopping" },
-  { value: "entertainment", label: "🎬 Entertainment" },
-  { value: "medication", label: "💊 Medication" },
-  { value: "sports", label: "⚽ Sports" },
-  { value: "other", label: "📦 Other" },
-  {value:"beauty", label:"💄 Beauty"},
-  {value:"education", label:"📚 Education"},
-  {value:"gift", label:"🎁 Gift"},
-  {value:"travel", label:"✈️ Travel"},
-  {value:"subscription", label:"📺 Subscription"},
-  {value:"beverage", label:"🧋Beverage"},
-  {value: "custom", label: "📝 Custom" },
-  {value:"tel&internet", label:"📱 Tel & Internet"},
-];
 
 const QuickEntryExpense: FC<QuickEntryExpenseProps> = ({ date, onRefresh }) => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("");
   const [type, setType] = useState<'expense' | 'income'>('expense');
-  const [customCategory, setCustomCategory] = useState("");
+  const [category, setCategory] = useState(CATEGORIES[0].value);
 
   const handleSave = async () => {
-    if (!amount || parseFloat(amount) <= 0) return toast.error("Enter valid amount");
-    if (!category) return toast.error("Please select a category");
-    const finalCategory = category === "custom" ? (customCategory.trim() || "Custom") : category;
+    const val = parseFloat(amount);
+    if (isNaN(val) || val <= 0) return toast.error(t("expenses.enterAmount"));
     
     await saveExpense({
-      id: `${Date.now()}`,
-      date,
-      amount: parseFloat(amount),
-      category: finalCategory,
-      description: "",
+      id: `exp-${Date.now()}`,
+      amount: val,
       type,
+      category,
+      date,
+      note: "",
+      description: ""
     });
     
-    setAmount(""); setCustomCategory(""); setCategory("");
-    toast.success("Saved!");
-    onRefresh();
+    setAmount("");
+    toast.success(t("expenses.saved"));
+    onRefresh?.();
   };
 
-  const getInputClass = () => {
+  const getCardClass = () => {
     switch(theme) {
-      case 'ocean': return "bg-slate-900/80 border border-white/10 text-white focus:border-cyan-500/50 rounded-xl transition-all";
-      case 'ink': return "bg-white border-2 border-black text-black focus:shadow-[4px_4px_0px_0px_black] rounded-lg transition-all";
-      case 'zen': return "bg-emerald-50/50 border border-emerald-100 text-emerald-900 focus:bg-white focus:border-emerald-300 rounded-xl transition-all";
-      default: return "bg-white/60 border border-gray-200/50 shadow-inner focus:bg-white focus:border-purple-300 rounded-xl transition-all";
+        case 'ocean': return "bg-slate-800/50 border-0 text-white backdrop-blur-xl shadow-xl";
+        case 'ink': return "bg-white border-2 border-black text-black shadow-[6px_6px_0px_0px_black]";
+        case 'zen': return "bg-white border-0 shadow-lg shadow-emerald-50/50";
+        default: return "glass-card border-0 bg-white/70 shadow-xl";
     }
   };
 
   return (
-    <Card 
-      className="flex flex-col h-full glass-card border-0 rounded-2xl shadow-xl"
-      headerClassName="pb-2"
-      header={(
-        <div className="flex items-center gap-2">
-          <Wallet className={cn("w-5 h-5", theme === 'ocean' ? "text-green-400" : "text-green-500")} />
-          Quick Add
+    <Card className={cn("rounded-[2.5rem] overflow-hidden transition-all duration-300 hover:shadow-2xl h-[320px] flex flex-col", getCardClass())}>
+      <CardContent className="p-10 flex flex-col justify-between h-full">
+        <div className="w-full flex justify-between items-start">
+          <h3 className="font-black text-2xl uppercase tracking-tighter">{t("home.quickActions")}</h3>
+          <div className="flex bg-slate-100 rounded-full p-1 shadow-inner">
+            <button onClick={() => setType('expense')} className={cn("px-4 py-1.5 rounded-full text-[10px] font-black uppercase transition-all", type === 'expense' ? "bg-black text-white shadow-md" : "text-slate-400")}>{t("expenses.expense")}</button>
+            <button onClick={() => setType('income')} className={cn("px-4 py-1.5 rounded-full text-[10px] font-black uppercase transition-all", type === 'income' ? "bg-black text-white shadow-md" : "text-slate-400")}>{t("expenses.income")}</button>
+          </div>
         </div>
-      )}
-      contentClassName="space-y-4 flex flex-col flex-1"
-      content={(
-        <>
-          <div className={cn("flex p-1 rounded-xl", theme === 'ocean' ? "bg-slate-900" : "bg-gray-100")}>
-              <button onClick={() => setType('expense')} className={cn("flex-1 py-1.5 rounded-lg text-sm font-medium transition-all", type === 'expense' ? "bg-white shadow-sm text-red-600" : "opacity-50")}>Expense</button>
-              <button onClick={() => setType('income')} className={cn("flex-1 py-1.5 rounded-lg text-sm font-medium transition-all", type === 'income' ? "bg-white shadow-sm text-green-600" : "opacity-50")}>Income</button>
-          </div>
 
-          <div className="space-y-2">
-            <Label className="text-[10px] uppercase font-bold opacity-60">Amount</Label>
-            <Input type="number" placeholder="0.00" value={amount} onChange={e => setAmount(e.target.value)} className={cn("text-base h-12 w-full", getInputClass())} />
+        <div className="flex flex-col gap-5">
+          <div className="relative">
+            <span className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-xl text-slate-400">$</span>
+            <input 
+              type="number" placeholder="0.00" value={amount} 
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-full h-16 pl-12 pr-4 rounded-2xl bg-black/5 border-0 font-black text-3xl outline-none focus:ring-2 focus:ring-black/10"
+            />
           </div>
           
-          <div className="space-y-2">
-            <Label className="text-[10px] uppercase font-bold opacity-60">Category</Label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className={cn("h-12 text-base w-full", getInputClass())}>
-                <SelectValue placeholder="Select category..." />
-              </SelectTrigger>
-              <SelectContent>{CATEGORIES.map(cat => ( <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem> ))}<SelectItem value="custom">✏️ Custom...</SelectItem></SelectContent>
-            </Select>
-            {category === "custom" && <Input placeholder="Category name" value={customCategory} onChange={e => setCustomCategory(e.target.value)} className={cn("h-10 mt-2 text-base", getInputClass())} />}
-          </div>
-          
-          <Button onClick={handleSave} className="w-full h-10 rounded-xl shadow-lg mt-auto active:scale-95">
-            <Plus className="w-4 h-4 mr-2" /> Add {type === 'expense' ? 'Expense' : 'Income'}
-          </Button>
-        </>
-      )}
-    />
+          <select 
+            value={category} onChange={(e) => setCategory(e.target.value)}
+            className="w-full h-12 px-5 rounded-xl bg-slate-100 border-0 font-black text-[11px] uppercase tracking-widest outline-none text-slate-600"
+          >
+            {CATEGORIES.map(cat => <option key={cat.value} value={cat.value}>{cat.label}</option>)}
+          </select>
+        </div>
+
+        <Button onClick={handleSave} className="w-full h-14 bg-black hover:bg-gray-800 text-white rounded-2xl font-black text-xs tracking-widest uppercase shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 mt-2">
+          <Plus className="w-5 h-5" />
+          {t("common.save")}
+        </Button>
+      </CardContent>
+    </Card>
   );
 };
 

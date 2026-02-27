@@ -17,7 +17,7 @@ export const MOOD_EMOJIS = [
         range: [1, 2], 
         emoji: "😣", 
         color: "bg-red-400", 
-        label: "Terrible", 
+        label: "mood.terrible", 
         illustration: {
             girl: cryingGirl,
             boy: cryingBoy
@@ -27,7 +27,7 @@ export const MOOD_EMOJIS = [
         range: [3, 4], 
         emoji: "😔", 
         color: "bg-orange-400", 
-        label: "Bad", 
+        label: "mood.bad", 
         illustration: {
             girl: sadGirl,
             boy: sadBoy
@@ -37,7 +37,7 @@ export const MOOD_EMOJIS = [
         range: [5, 6], 
         emoji: "😐", 
         color: "bg-gray-400", 
-        label: "Okay", 
+        label: "mood.okay", 
         illustration: {
             girl: neutralGirl,
             boy: neutralBoy
@@ -47,7 +47,7 @@ export const MOOD_EMOJIS = [
         range: [7, 8], 
         emoji: "🙂", 
         color: "bg-lime-400", 
-        label: "Good", 
+        label: "mood.good", 
         illustration: {
             girl: happyGirl,
             boy: happyBoy
@@ -57,7 +57,7 @@ export const MOOD_EMOJIS = [
         range: [9, 10], 
         emoji: "🤩", 
         color: "bg-green-400", 
-        label: "Amazing", 
+        label: "mood.amazing", 
         illustration: {
             girl: excitedGirl,
             boy: excitedBoy

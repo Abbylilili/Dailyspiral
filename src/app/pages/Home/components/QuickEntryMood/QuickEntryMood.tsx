@@ -1,124 +1,79 @@
 import type { FC } from 'react';
-import { useState } from 'react';
-import { Card } from "@/app/components/ui/card";
-import { Slider } from "@/app/components/ui/slider";
+import { useState, useEffect } from 'react';
+import { Card, CardContent } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Heart } from "lucide-react";
 import { useTheme } from "@/app/contexts/ThemeContext";
+import { useLanguage } from "@/app/contexts/LanguageContext";
 import { cn } from "@/app/components/ui/utils";
 import { getMoodConfig } from "@/app/lib/moodConfig";
-import { saveMood, getGenderPreference } from "@/app/lib/storage";
+import { getGenderPreference, saveMood } from "@/app/lib/storage";
 import { toast } from "sonner";
 
 interface QuickEntryMoodProps {
-  initialMood: number;
+  initialMood?: number;
   date: string;
-  onRefresh: () => void;
+  onRefresh?: () => void;
 }
 
-const QuickEntryMood: FC<QuickEntryMoodProps> = ({ initialMood, date, onRefresh }) => {
+const QuickEntryMood: FC<QuickEntryMoodProps> = ({ initialMood = 5, date, onRefresh }) => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [mood, setMood] = useState(initialMood);
-  const gender = getGenderPreference() || 'girl';
+  const [gender] = useState<'boy' | 'girl'>(() => getGenderPreference() || 'girl');
   const moodConfig = getMoodConfig(mood);
 
+  useEffect(() => {
+    setMood(initialMood);
+  }, [initialMood, date]);
+
   const handleSave = async () => {
-    // Non-blocking save
-    saveMood({ id: date, date, mood });
-    toast.success("Mood saved!");
-    // We can call onRefresh to sync everything else, 
-    // but the local change is already "effective" visually because of the local state
-    onRefresh();
+    await saveMood({ id: date, date, mood, note: "" });
+    toast.success(t("mood.saved"));
+    onRefresh?.();
   };
 
   const getCardClass = () => {
-      switch(theme) {
-          case 'ocean': return "bg-slate-800/50 border-0 text-white backdrop-blur-xl shadow-xl";
-          case 'ink': return "bg-white border-2 border-black text-black shadow-[6px_6px_0px_0px_black] rounded-xl";
-          default: return "glass-card border-0 rounded-2xl shadow-xl";
-      }
-  };
-
-  const getButtonClass = () => {
-      switch(theme) {
-          case 'ocean': return "bg-cyan-500 text-slate-900 hover:bg-cyan-400";
-          case 'ink': return "bg-black text-white hover:bg-gray-800 rounded-lg";
-          default: return "bg-black text-white hover:bg-gray-800";
-      }
+    switch(theme) {
+        case 'ocean': return "bg-slate-800/50 border-0 text-white backdrop-blur-xl shadow-xl";
+        case 'ink': return "bg-white border-2 border-black text-black shadow-[6px_6px_0px_0px_black]";
+        case 'zen': return "bg-white border-0 shadow-lg shadow-emerald-50/50";
+        default: return "glass-card border-0 bg-white/70 shadow-xl";
+    }
   };
 
   return (
-    <Card 
-      className={cn("flex flex-col h-full", getCardClass())}
-      headerClassName="pb-2"
-      header={(
-        <div className="flex items-center gap-2">
-          <Heart className={cn("w-5 h-5", theme === 'ocean' ? "text-pink-400" : "text-pink-500")} />
-          Record Mood
+    <Card className={cn("rounded-[2.5rem] overflow-hidden transition-all duration-300 hover:shadow-2xl h-[320px]", getCardClass())}>
+      <CardContent className="p-10 h-full flex flex-col justify-between">
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="font-black text-2xl uppercase tracking-tighter">{t("home.recordMood")}</h3>
+            <p className="text-[11px] font-black uppercase opacity-40 tracking-widest mt-1">{t("home.mood")}</p>
+          </div>
+          <div className="text-4xl font-black tracking-tighter">{mood}<span className="text-sm opacity-30">/10</span></div>
         </div>
-      )}
-      tag="Today"
-      contentClassName="space-y-4 flex flex-col flex-1"
-      content={(
-        <>
-          <div className="flex flex-col items-center justify-center py-4">
-            <div className={cn("w-24 h-24 rounded-full overflow-hidden shadow-xl mb-3 border-4 transition-all duration-500 relative bg-white/10", moodConfig.color.replace('bg-', 'bg-opacity-20 bg-'))}>
-              {moodConfig.illustration ? (
-                  <img src={moodConfig.illustration[gender]} alt={moodConfig.label} className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-700 saturate-125" />
-              ) : (
-                  <div className="w-full h-full flex items-center justify-center text-4xl">{moodConfig.emoji}</div>
-              )}
-            </div>
-            <p className="text-2xl font-black">{mood}/10</p>
-          </div>
-          
-          <div className="space-y-2 flex-1">
-            <style>
-              {`
-                .neon-thumb-home {
-                  position: relative;
-                  z-index: 10;
-                  border: 2px solid ${theme === 'ink' ? '#000' : theme === 'ocean' ? '#fff' : '#e5e7eb'} !important;
-                  transition: all 0.2s ease;
-                }
-                .neon-thumb-home:hover {
-                  background-color: transparent !important;
-                  border-color: transparent !important;
-                  transform: scale(1.5);
-                }
-                .neon-thumb-home:hover::after {
-                  content: "⭐️";
-                  position: absolute;
-                  top: 50%;
-                  left: 50%;
-                  transform: translate(-50%, -55%);
-                  font-size: 14px;
-                }
-              `}
-            </style>
-            <Slider 
-              value={[mood]} 
-              onValueChange={(v) => setMood(v[0])} 
-              min={1} 
-              max={10} 
-              step={1} 
-              rangeClassName="bg-gradient-to-r from-pink-500 to-purple-600"
-              trackClassName={theme === 'ocean' ? "bg-slate-700" : ""}
-              thumbClassName="neon-thumb-home w-6 h-6 bg-white shadow-lg" 
-            />
-            <div className="flex justify-between text-[10px] font-bold opacity-40 uppercase">
-              <span>Very Bad</span>
-              <span>Excellent</span>
-            </div>
-          </div>
 
-          <Button onClick={handleSave} className={cn("relative w-full h-10 text-sm font-bold rounded-xl shadow-lg mt-auto active:scale-95", getButtonClass())}>
-            <Heart className="absolute left-4 w-4 h-4 fill-current" />
-            <span>Save Mood</span>
-          </Button>
-        </>
-      )}
-    />
+        <div className="flex flex-col items-center gap-4">
+          <div className={cn("w-24 h-24 rounded-full overflow-hidden shadow-lg border-2 border-white transition-all duration-500", moodConfig.color)}>
+            {moodConfig.illustration ? (
+              <img src={moodConfig.illustration[gender]} className="w-full h-full object-cover" alt="Mood" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-4xl">{moodConfig.emoji}</div>
+            )}
+          </div>
+          <input 
+            type="range" min="1" max="10" step="1" value={mood} 
+            onChange={(e) => setMood(parseInt(e.target.value))}
+            className="w-full h-1.5 bg-black/5 rounded-lg appearance-none cursor-pointer accent-black"
+          />
+        </div>
+
+        <Button onClick={handleSave} className="w-full h-14 bg-black hover:bg-gray-800 text-white rounded-2xl font-black text-xs tracking-widest uppercase shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 mt-2">
+          <Heart className="w-5 h-5 fill-current" />
+          {t("mood.saveRecord")}
+        </Button>
+      </CardContent>
+    </Card>
   );
 };
 

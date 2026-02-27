@@ -1,6 +1,7 @@
 import type { FC } from 'react';
 import { Card, CardContent } from "@/app/components/ui/card";
 import { useTheme } from "@/app/contexts/ThemeContext";
+import { useLanguage } from "@/app/contexts/LanguageContext";
 import { cn } from "@/app/components/ui/utils";
 
 interface HabitStatsProps {
@@ -11,6 +12,7 @@ interface HabitStatsProps {
 
 const HabitStats: FC<HabitStatsProps> = ({ completionRate, habitCount, bestStreak }) => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   
   const getCardClass = () => {
      switch(theme) {
@@ -27,27 +29,27 @@ const HabitStats: FC<HabitStatsProps> = ({ completionRate, habitCount, bestStrea
     <div className="grid md:grid-cols-3 gap-6">
       <Card className={cn("overflow-hidden hover:shadow-lg transition-all duration-300", getCardClass())}>
         <CardContent className="pt-8 pb-8 px-6 flex flex-col items-center justify-center text-center">
-          <p className={cn("text-sm mb-2 font-semibold uppercase tracking-wider", getLabelClass())}>Weekly Completion</p>
+          <p className={cn("text-[10px] font-black uppercase tracking-widest mb-2", getLabelClass())}>{t("habits.weeklyCompletion")}</p>
           <div className="flex items-end gap-1">
-            <p className={cn("text-5xl font-bold tracking-tighter", getValueClass())}>{completionRate.toFixed(0)}</p>
-            <p className={cn("text-2xl font-medium mb-1", theme === 'ocean' ? "text-slate-500" : "text-muted-foreground")}>%</p>
+            <p className={cn("text-5xl font-black tracking-tighter", getValueClass())}>{completionRate.toFixed(0)}</p>
+            <p className={cn("text-2xl font-bold mb-1 opacity-40", getValueClass())}>%</p>
           </div>
         </CardContent>
       </Card>
       
       <Card className={cn("overflow-hidden hover:shadow-lg transition-all duration-300", getCardClass())}>
         <CardContent className="pt-8 pb-8 px-6 flex flex-col items-center justify-center text-center">
-          <p className={cn("text-sm mb-2 font-semibold uppercase tracking-wider", getLabelClass())}>Habit Count</p>
-          <p className={cn("text-5xl font-bold tracking-tighter", getValueClass())}>{habitCount}</p>
+          <p className={cn("text-[10px] font-black uppercase tracking-widest mb-2", getLabelClass())}>{t("habits.habitCount")}</p>
+          <p className={cn("text-5xl font-black tracking-tighter", getValueClass())}>{habitCount}</p>
         </CardContent>
       </Card>
       
       <Card className={cn("overflow-hidden hover:shadow-lg transition-all duration-300", getCardClass())}>
         <CardContent className="pt-8 pb-8 px-6 flex flex-col items-center justify-center text-center">
-          <p className={cn("text-sm mb-2 font-semibold uppercase tracking-wider", getLabelClass())}>Longest Streak</p>
+          <p className={cn("text-[10px] font-black uppercase tracking-widest mb-2", getLabelClass())}>{t("habits.longestStreak")}</p>
           <div className="flex items-end gap-1">
-            <p className={cn("text-5xl font-bold tracking-tighter", getValueClass())}>{bestStreak}</p>
-            <p className={cn("text-xl font-medium mb-1", theme === 'ocean' ? "text-slate-500" : "text-muted-foreground")}>Days</p>
+            <p className={cn("text-5xl font-black tracking-tighter", getValueClass())}>{bestStreak}</p>
+            <p className={cn("text-[10px] font-black mb-1 opacity-40 uppercase tracking-widest", getValueClass())}>{t("habits.days")}</p>
           </div>
         </CardContent>
       </Card>

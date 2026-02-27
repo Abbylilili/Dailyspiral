@@ -1,1 +1,1 @@
-export { SpiralVisualizer } from '@/app/components/SpiralVisualizer/SpiralVisualizer';
+export { default as SpiralVisualizer } from './SpiralVisualizer';

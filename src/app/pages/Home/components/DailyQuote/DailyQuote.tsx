@@ -2,6 +2,7 @@ import type { FC } from 'react';
 import { Card, CardContent } from "@/app/components/ui/card";
 import { Sparkles } from "lucide-react";
 import { useTheme } from "@/app/contexts/ThemeContext";
+import { useLanguage } from "@/app/contexts/LanguageContext";
 import { cn } from "@/app/components/ui/utils";
 import { getQuoteForMood, getRandomQuote } from "@/app/lib/quotes";
 
@@ -11,7 +12,8 @@ interface DailyQuoteProps {
 
 const DailyQuote: FC<DailyQuoteProps> = ({ moodScore }) => {
   const { theme } = useTheme();
-  const quote = moodScore > 0 ? getQuoteForMood(moodScore) : getRandomQuote();
+  const { language } = useLanguage();
+  const quote = moodScore > 0 ? getQuoteForMood(moodScore, language) : getRandomQuote(language);
 
   const getQuoteCardStyle = () => {
       switch(theme) {

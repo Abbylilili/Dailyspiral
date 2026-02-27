@@ -3,12 +3,15 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { ChevronLeft, ChevronRight, CheckSquare, Calendar as CalendarIcon } from "lucide-react";
-import { format, eachDayOfInterval, startOfWeek, endOfWeek, subWeeks, addWeeks, subMonths, addMonths, subYears, addYears, isSameDay } from "date-fns";
+import { format, eachDayOfInterval, startOfWeek, endOfWeek, subWeeks, addWeeks, subMonths, addMonths, subYears, addYears, isSameDay, isAfter, startOfDay, parseISO } from "date-fns";
+import { zhCN, enUS } from "date-fns/locale";
 import { HabitCircularView } from "@/app/components/HabitCircularView";
 import { HabitYearView } from "@/app/components/HabitYearView";
 import { useTheme } from "@/app/contexts/ThemeContext";
+import { useLanguage } from "@/app/contexts/LanguageContext";
 import { cn } from "@/app/components/ui/utils";
 import type { Habit, HabitEntry } from "@/app/lib/storage";
+import { isHabitDueToday } from "../../utils/streakUtils/streakUtils";
 
 interface HabitTrackerProps {
   habits: Habit[];
@@ -21,6 +24,8 @@ type ViewMode = "week" | "month" | "year";
 
 const HabitTracker: FC<HabitTrackerProps> = ({ habits, entries, onToggle, calculateStreak }) => {
   const { theme } = useTheme();
+  const { t, language } = useLanguage();
+  const locale = language === 'zh' ? zhCN : enUS;
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -50,27 +55,34 @@ const HabitTracker: FC<HabitTrackerProps> = ({ habits, entries, onToggle, calcul
   };
 
   const getHeaderLabel = () => {
-    if (viewMode === 'week') return `${format(currentWeekStart, 'MMM d')} - ${format(currentWeekEnd, 'MMM d, yyyy')}`;
-    if (viewMode === 'month') return format(selectedDate, 'MMMM yyyy');
-    if (viewMode === 'year') return format(selectedDate, 'yyyy');
+    if (viewMode === 'week') return `${format(currentWeekStart, 'MMM d', { locale })} - ${format(currentWeekEnd, 'MMM d, yyyy', { locale })}`;
+    if (viewMode === 'month') return format(selectedDate, 'MMMM yyyy', { locale });
+    if (viewMode === 'year') return format(selectedDate, 'yyyy', { locale });
     return "";
   };
 
   return (
     <Card className={cn("shadow-xl", getCardClass())}>
       <CardHeader className="pb-0 pt-6 px-8 relative z-20">
-        <CardTitle className={cn("text-2xl font-bold tracking-tight mb-4", theme === 'ocean' && "text-white")}>Habit Tracker</CardTitle>
+        <CardTitle className={cn("text-2xl font-black uppercase tracking-tighter mb-4", theme === 'ocean' && "text-white")}>{t("habits.tracker")}</CardTitle>
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 relative min-h-[40px]">
           <div className="flex items-center justify-center gap-2">
             <Button variant="ghost" size="icon" onClick={handlePrev} className="rounded-full"><ChevronLeft /></Button>
-            <Button variant="ghost" className="text-lg font-bold min-w-[140px] rounded-xl"><CalendarIcon className="w-4 h-4 mr-2 opacity-50" /> {getHeaderLabel()}</Button>
+            <Button variant="ghost" className="text-sm font-black uppercase tracking-widest min-w-[140px] rounded-xl"><CalendarIcon className="w-4 h-4 mr-2 opacity-50" /> {getHeaderLabel()}</Button>
             <Button variant="ghost" size="icon" onClick={handleNext} className="rounded-full"><ChevronRight /></Button>
           </div>
-          <div className={cn("flex gap-1 p-1 rounded-full", theme === 'ink' ? "bg-gray-100 border border-black" : "bg-muted/50")}>
+          <div className="flex items-center bg-slate-100 rounded-full p-1 shadow-inner">
             {["week", "month", "year"].map((mode) => (
-              <Button key={mode} variant="ghost" size="sm" onClick={() => setViewMode(mode as ViewMode)} className={cn("px-4 sm:px-6 transition-all duration-300", theme === 'ink' ? "rounded-md" : "rounded-full", viewMode === mode ? (theme === 'ink' ? "bg-black text-white" : "bg-white shadow-sm text-black font-semibold") : "text-muted-foreground opacity-60")}>
-                {mode.charAt(0).toUpperCase() + mode.slice(1)}
-              </Button>
+              <button 
+                key={mode} 
+                onClick={() => setViewMode(mode as ViewMode)} 
+                className={cn(
+                  "px-6 py-2 transition-all duration-300 text-[9px] font-black uppercase tracking-widest rounded-full", 
+                  viewMode === mode ? "bg-black text-white shadow-lg scale-105" : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                {t(`plan.${mode}`)}
+              </button>
             ))}
           </div>
         </div>
@@ -104,38 +116,68 @@ const HabitTracker: FC<HabitTrackerProps> = ({ habits, entries, onToggle, calcul
             <table className="w-full border-separate border-spacing-y-2 min-w-[600px]">
               <thead>
                 <tr>
-                  <th className={cn("text-left p-2 font-semibold text-xs uppercase tracking-wider", theme === 'ocean' ? "text-slate-400" : "text-muted-foreground")}>Habit</th>
-                  {currentWeekDays.map(day => (
-                    <th key={day.toISOString()} className="text-center p-1">
-                      <div className={cn("text-[10px] font-semibold mb-1 uppercase tracking-wide", theme === 'ocean' ? "text-slate-400" : "text-muted-foreground")}>{format(day, 'EEE')}</div>
-                      <div className={cn(`text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center mx-auto`, isSameDay(day, new Date()) ? (theme === 'ocean' ? 'bg-cyan-500 text-black shadow-md' : 'bg-primary text-primary-foreground') : (theme === 'ocean' ? 'text-white' : 'text-foreground'))}>{format(day, 'd')}</div>
-                    </th>
-                  ))}
-                  <th className={cn("text-center p-2 font-semibold text-xs uppercase tracking-wider", theme === 'ocean' ? "text-slate-400" : "text-muted-foreground")}>Streak</th>
+                  <th className={cn("text-left p-2 font-black text-[10px] uppercase tracking-widest", theme === 'ocean' ? "text-slate-400" : "text-muted-foreground")}>{t("habits.habit")}</th>
+                  {currentWeekDays.map(day => {
+                    const isToday = isSameDay(day, new Date());
+                    const isFuture = isAfter(startOfDay(day), startOfDay(new Date()));
+                    return (
+                      <th key={day.toISOString()} className="text-center p-1">
+                        <div className={cn("text-[10px] font-black mb-1 uppercase tracking-tighter", theme === 'ocean' ? "text-slate-400" : "text-muted-foreground", isToday && "text-blue-600")}>{format(day, 'EEE', { locale })}</div>
+                        <div className={cn(
+                          `text-[10px] font-black w-7 h-7 rounded-full flex items-center justify-center mx-auto transition-all`, 
+                          isToday ? (theme === 'ocean' ? 'bg-cyan-500 text-black shadow-lg scale-110' : 'bg-blue-600 text-white shadow-md scale-110') : 
+                          isFuture ? 'text-muted-foreground opacity-40' :
+                          (theme === 'ocean' ? 'text-white' : 'text-foreground')
+                        )}>
+                          {format(day, 'd')}
+                        </div>
+                      </th>
+                    );
+                  })}
+                  <th className={cn("text-center p-2 font-black text-[10px] uppercase tracking-widest", theme === 'ocean' ? "text-slate-400" : "text-muted-foreground")}>{t("habits.streak")}</th>
                 </tr>
               </thead>
               <tbody>
                 {habits.map(habit => (
                   <tr key={habit.id} className="group">
-                    <td className={cn("p-2 rounded-l-xl backdrop-blur-sm", theme === 'ocean' ? "bg-white/5" : "bg-white/40")}>
-                      <div className="flex items-center gap-2">
+                    <td className={cn("p-3 rounded-l-2xl backdrop-blur-sm", theme === 'ocean' ? "bg-white/5" : "bg-white/40")}>
+                      <div className="flex items-center gap-3">
                         <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: habit.color }} />
-                        <span className={cn("font-semibold text-sm", theme === 'ocean' && "text-slate-200")}>{habit.name}</span>
+                        <div className="flex flex-col">
+                          <span className={cn("font-black text-sm uppercase tracking-tight", theme === 'ocean' ? "text-slate-200" : "text-slate-800")}>{habit.name}</span>
+                          <span className="text-[9px] opacity-50 font-black uppercase tracking-widest">
+                            {habit.frequency?.type === 'daily' ? t("habits.everyDay") : habit.frequency?.type === 'weekly' ? t("habits.specDays") : `${habit.frequency?.times}x/wk`}
+                          </span>
+                        </div>
                       </div>
                     </td>
                     {currentWeekDays.map(day => {
                       const dateStr = format(day, 'yyyy-MM-dd');
                       const completed = entries.find(e => e.habitId === habit.id && e.date === dateStr)?.completed ?? false;
+                      const isFuture = isAfter(startOfDay(day), startOfDay(new Date()));
+                      const isDue = isHabitDueToday(habit, day);
+                      
                       return (
-                        <td key={dateStr} className={cn("text-center p-1 backdrop-blur-sm", theme === 'ocean' ? "bg-white/5" : "bg-white/40")}>
-                          <button onClick={() => onToggle(habit.id, dateStr)} className={cn(`w-8 h-8 rounded-lg transition-all duration-300 flex items-center justify-center mx-auto`, completed ? 'text-white shadow-sm scale-100' : (theme === 'ocean' ? 'bg-white/5' : 'bg-black/5 text-transparent opacity-30'))} style={{ backgroundColor: completed ? habit.color : undefined }}>
-                            {completed && <CheckSquare className="w-4 h-4" />}
+                        <td key={dateStr} className={cn("text-center p-1 backdrop-blur-sm relative", theme === 'ocean' ? "bg-white/5" : "bg-white/40")}>
+                          <button 
+                            disabled={isFuture}
+                            onClick={() => onToggle(habit.id, dateStr)} 
+                            className={cn(
+                              `w-8 h-8 rounded-xl transition-all duration-300 flex items-center justify-center mx-auto border-2`, 
+                              completed ? 'text-white shadow-sm border-transparent' : 
+                              isFuture ? 'bg-transparent border-dashed border-slate-200 cursor-not-allowed opacity-20' :
+                              !isDue ? 'bg-slate-50/50 border-transparent opacity-30 cursor-pointer hover:opacity-100' :
+                              (theme === 'ocean' ? 'bg-white/10 border-transparent hover:bg-white/20' : 'bg-black/5 border-transparent hover:bg-black/10')
+                            )} 
+                            style={{ backgroundColor: completed ? habit.color : undefined }}
+                          >
+                            {completed ? <CheckSquare className="w-4 h-4" /> : (!isDue && !isFuture && <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />)}
                           </button>
                         </td>
                       );
                     })}
-                    <td className={cn("text-center p-2 rounded-r-xl backdrop-blur-sm", theme === 'ocean' ? "bg-white/5" : "bg-white/40")}>
-                      <span className={cn("font-bold text-lg", theme === 'ocean' ? "text-white" : "text-foreground")}>{calculateStreak(habit.id)}<span className="text-[10px] ml-0.5">🔥</span></span>
+                    <td className={cn("text-center p-3 rounded-r-2xl backdrop-blur-sm", theme === 'ocean' ? "bg-white/5" : "bg-white/40")}>
+                      <span className={cn("font-black text-lg", theme === 'ocean' ? "text-white" : "text-foreground")}>{calculateStreak(habit.id)}<span className="text-[10px] ml-0.5">🔥</span></span>
                     </td>
                   </tr>
                 ))}

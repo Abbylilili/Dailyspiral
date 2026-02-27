@@ -27,13 +27,12 @@ export default function Settings() {
     window.location.href = "/login";
   };
   
-  // Theme Helper
   const getCardClass = () => {
      switch(theme) {
          case 'ocean': return "bg-slate-800/50 border-0 text-white backdrop-blur-xl shadow-xl";
          case 'ink': return "bg-white border-2 border-black text-black shadow-[6px_6px_0px_0px_black] rounded-xl";
          case 'zen': return "bg-white border-0 shadow-lg shadow-emerald-50/50 rounded-3xl";
-         default: return "glass-card border-0";
+         default: return "glass-card border-0 rounded-[2rem]";
      }
   };
 
@@ -46,21 +45,20 @@ export default function Settings() {
 
   const handleExport = () => {
     setIsExporting(true);
-    
     setTimeout(() => {
-      const data = exportAllData();
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `dailyspiral-backup-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      setIsExporting(false);
-      toast.success(t("settings.dataExported"));
+      exportAllData().then(data => {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `dailyspiral-backup-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setIsExporting(false);
+        toast.success(t("settings.dataExported"));
+      });
     }, 500);
   };
   
@@ -73,139 +71,101 @@ export default function Settings() {
   };
   
   return (
-    <div className="space-y-8 max-w-6xl mx-auto p-8">
-      {/* Header */}
+    <div className="space-y-8 max-w-6xl mx-auto p-8 animate-in fade-in duration-700">
       <div className="flex items-center justify-between">
-        <h2 className={cn("text-4xl font-bold bg-clip-text text-transparent",
+        <h2 className={cn("text-4xl font-black tracking-tighter uppercase bg-clip-text text-transparent",
             theme === 'ocean' ? "bg-gradient-to-r from-cyan-400 to-blue-500" :
-            theme === 'ink' ? "text-black font-['Rubik_Dirt'] tracking-wider" :
+            theme === 'ink' ? "text-black" :
             theme === 'zen' ? "bg-gradient-to-r from-emerald-600 to-teal-600" :
             "bg-gradient-to-r from-purple-600 to-pink-600"
         )}>{t("settings.title")}</h2>
       </div>
 
-      {/* Account Profile */}
       <Card className={cn(getCardClass())}>
         <CardHeader>
-          <CardTitle className={cn("flex items-center gap-2", theme === 'ocean' && "text-white")}>
+          <CardTitle className={cn("flex items-center gap-2 text-xl font-bold", theme === 'ocean' && "text-white")}>
             <User className="w-5 h-5 text-purple-500" />
-            Personal Account
+            {t("settings.dataManagement")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className={cn("flex items-center justify-between p-4 rounded-2xl", 
+          <div className={cn("flex items-center justify-between p-6 rounded-2xl", 
               theme === 'ocean' ? "bg-slate-900/50" : 
               theme === 'ink' ? "border-2 border-black" :
               "bg-gray-50"
           )}>
             <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-400 to-pink-300 flex items-center justify-center text-white font-bold text-xl">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-white font-black text-2xl shadow-lg">
                     {user?.email?.[0].toUpperCase() || "U"}
                 </div>
                 <div>
-                    <p className={cn("font-bold", theme === 'ocean' ? "text-white" : "text-gray-800")}>
+                    <p className={cn("font-black text-lg", theme === 'ocean' ? "text-white" : "text-gray-800")}>
                         {user?.email}
                     </p>
-                    <p className="text-xs text-muted-foreground">Logged in via Email</p>
+                    <p className="text-xs font-bold opacity-50 uppercase tracking-widest">Personal Account</p>
                 </div>
             </div>
-            <Button 
-                variant="ghost" 
-                onClick={handleSignOut}
-                className="text-red-500 hover:text-red-600 hover:bg-red-50"
-            >
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
+            <Button variant="ghost" onClick={handleSignOut} className="text-red-500 hover:text-red-600 hover:bg-red-50 font-bold px-6 h-12 rounded-xl">
+                <LogOut className="w-4 h-4 mr-2" /> {t("common.delete")}
             </Button>
           </div>
         </CardContent>
       </Card>
       
-      {/* About */}
       <Card className={cn(getCardClass())}>
         <CardHeader>
-          <CardTitle className={cn("flex items-center gap-2", theme === 'ocean' && "text-white")}>
+          <CardTitle className={cn("flex items-center gap-2 text-xl font-bold", theme === 'ocean' && "text-white")}>
             <Info className="w-5 h-5 text-blue-500" />
             {t("settings.about")}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           <div>
-            <h3 className={cn("font-bold text-lg mb-2", theme === 'ocean' && "text-white")}>{t("app.name")}</h3>
-            <p className={cn("mb-4", theme === 'ocean' ? "text-slate-300" : "text-gray-600")}>
+            <h3 className={cn("font-black text-2xl mb-2", theme === 'ocean' && "text-white")}>{t("app.name")}</h3>
+            <p className={cn("text-lg font-medium opacity-80 leading-relaxed", theme === 'ocean' ? "text-slate-300" : "text-gray-600")}>
               {t("settings.description")}
             </p>
           </div>
           
-          <div className={cn("p-4", getSectionClass('purple'))}>
-            <h4 className={cn("font-bold mb-2", theme === 'ocean' ? "text-purple-300" : "text-purple-900")}>{t("welcome.features")}</h4>
-            <ul className={cn("space-y-2 text-sm", theme === 'ocean' ? "text-purple-200" : "text-purple-800")}>
-              <li className="flex items-start gap-2">
-                <span className="text-purple-500 mt-1">•</span>
-                <span><strong>{t("welcome.expenseSystem")}:</strong> {t("welcome.expenseSystemDesc")}</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-purple-500 mt-1">•</span>
-                <span><strong>{t("welcome.moodDiary")}:</strong> {t("welcome.moodDiaryDesc")}</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-purple-500 mt-1">•</span>
-                <span><strong>{t("welcome.habitTracking")}:</strong> {t("welcome.habitTrackingDesc")}</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-purple-500 mt-1">•</span>
-                <span><strong>{t("welcome.aiInsights")}:</strong> {t("welcome.aiInsightsDesc")}</span>
-              </li>
+          <div className={cn("p-6 rounded-3xl", getSectionClass('purple'))}>
+            <h4 className={cn("font-black mb-4 uppercase tracking-widest text-sm", theme === 'ocean' ? "text-purple-300" : "text-purple-900")}>{t("welcome.features")}</h4>
+            <ul className={cn("space-y-3 text-base font-bold", theme === 'ocean' ? "text-purple-200" : "text-purple-800")}>
+              <li className="flex items-start gap-3"><span className="text-purple-500">•</span>{t("welcome.expenseSystem")}</li>
+              <li className="flex items-start gap-3"><span className="text-purple-500">•</span>{t("welcome.moodDiary")}</li>
+              <li className="flex items-start gap-3"><span className="text-purple-500">•</span>{t("welcome.habitTracking")}</li>
+              <li className="flex items-start gap-3"><span className="text-purple-500">•</span>{t("welcome.aiInsights")}</li>
             </ul>
           </div>
           
-          <div className={cn("text-sm", theme === 'ocean' ? "text-slate-400" : "text-gray-600")}>
-            <p className="mb-2"><strong>{t("settings.version")}:</strong> MVP 1.0</p>
-            <p className="mb-2"><strong>{t("settings.privacy")}:</strong></p>
-            <p>{t("settings.privacyDesc")}</p>
+          <div className={cn("text-sm font-bold opacity-60 flex justify-between items-center px-2", theme === 'ocean' ? "text-slate-400" : "text-gray-600")}>
+            <span>{t("settings.version")}: 1.0.0</span>
+            <span>DAILY SPIRAL © 2026</span>
           </div>
         </CardContent>
       </Card>
       
-      {/* Data Management */}
       <Card className={cn(getCardClass())}>
-        <CardHeader>
-          <CardTitle className={cn(theme === 'ocean' && "text-white")}>{t("settings.dataManagement")}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className={cn("flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4", getSectionClass('blue'))}>
+        <CardHeader><CardTitle className={cn("text-xl font-bold", theme === 'ocean' && "text-white")}>{t("settings.dataManagement")}</CardTitle></CardHeader>
+        <CardContent className="grid md:grid-cols-2 gap-6">
+          <div className={cn("p-6 rounded-3xl flex flex-col justify-between gap-4", getSectionClass('blue'))}>
             <div>
-              <h4 className={cn("font-bold", theme === 'ocean' ? "text-blue-300" : "text-blue-900")}>{t("settings.exportData")}</h4>
-              <p className={cn("text-sm mt-1", theme === 'ocean' ? "text-blue-200" : "text-blue-700")}>
-                {t("settings.exportDesc")}
-              </p>
+              <h4 className="font-black text-lg">{t("settings.exportData")}</h4>
+              <p className="text-sm font-medium opacity-70 mt-1">{t("settings.exportDesc")}</p>
             </div>
-            <Button 
-              onClick={handleExport} 
-              disabled={isExporting}
-              className={cn("flex items-center gap-2 w-full md:w-auto", 
-                  theme === 'ocean' ? "bg-blue-600 text-white hover:bg-blue-500" : 
-                  theme === 'ink' ? "bg-black text-white hover:bg-gray-800" :
-                  ""
-              )}
-            >
-              <Download className="w-4 h-4" />
-              {isExporting ? t("settings.exporting") : t("settings.export")}
+            <Button onClick={handleExport} disabled={isExporting} className="w-full h-12 bg-black hover:bg-gray-800 text-white rounded-2xl font-black text-xs tracking-widest uppercase shadow-lg transition-all hover:scale-[1.02] active:scale-95">
+              <Download className="w-4 h-4 mr-2" /> {isExporting ? t("settings.exporting") : t("settings.export")}
             </Button>
           </div>
           
-          <div className={cn("flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4", getSectionClass('red'))}>
+          <div className={cn("p-6 rounded-3xl flex flex-col justify-between gap-4", getSectionClass('red'))}>
             <div>
-              <h4 className={cn("font-bold", theme === 'ocean' ? "text-red-300" : "text-red-900")}>{t("settings.clearData")}</h4>
-              <p className={cn("text-sm mt-1", theme === 'ocean' ? "text-red-200" : "text-red-700")}>
-                {t("settings.clearDesc")}
-              </p>
+              <h4 className="font-black text-lg">{t("settings.clearData")}</h4>
+              <p className="text-sm font-medium opacity-70 mt-1">{t("settings.clearDesc")}</p>
             </div>
             <AlertDialog
               trigger={
-                <Button variant="destructive" className={cn("flex items-center gap-2 w-full md:w-auto", theme === 'ink' && "bg-black text-white hover:bg-red-600")}>
-                  <Trash2 className="w-4 h-4" />
-                  {t("settings.clear")}
+                <Button className="w-full h-12 bg-black hover:bg-red-600 text-white rounded-2xl font-black text-xs tracking-widest uppercase shadow-lg transition-all hover:scale-[1.02] active:scale-95">
+                  <Trash2 className="w-4 h-4 mr-2" /> {t("settings.clear")}
                 </Button>
               }
               title={t("settings.confirmClear")}
@@ -213,7 +173,7 @@ export default function Settings() {
               cancelText={t("settings.cancel")}
               actionText={t("settings.confirmClearButton")}
               onAction={handleClearData}
-              actionClassName="bg-red-600 hover:bg-red-700"
+              actionClassName="bg-red-600 hover:bg-red-700 font-black"
             />
           </div>
         </CardContent>

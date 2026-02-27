@@ -1,6 +1,6 @@
 import type { FC } from 'react';
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, Edit2, CheckSquare, Sparkles } from "lucide-react";
+import { Plus, Pencil, Trash2, Edit2, CheckSquare, Sparkles, Calendar } from "lucide-react";
 import useHabits from '@/app/pages/Habits/hooks/useHabits/useHabits';
 import HabitStats from '@/app/pages/Habits/components/HabitStats/HabitStats';
 import HabitTracker from '@/app/pages/Habits/components/HabitTracker/HabitTracker';
@@ -8,67 +8,102 @@ import { calculateStreak, calculateCompletionRate } from '@/app/pages/Habits/uti
 import { Button } from "@/app/components/ui/button";
 import { Dialog } from "@/app/components/ui/dialog";
 import { useTheme } from '@/app/contexts/ThemeContext';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 import { cn } from '@/app/components/ui/utils';
-import type { Habit } from '@/app/lib/storage';
+import type { Habit, HabitFrequency } from '@/app/lib/storage';
 import { toast } from "sonner";
 
 const COLORS = ["#FF9500", "#34C759", "#5856D6", "#007AFF", "#FF2D55", "#AF52DE", "#FF3B30", "#5AC8FA", "#FFCC00", "#8E8E93"];
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const Habits: FC = () => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const { habits, entries, isLoading, addOrUpdateHabit, removeHabit, toggleEntry } = useHabits();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isManageOpen, setIsManageOpen] = useState(false);
   const [habitName, setHabitName] = useState("");
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
+  const [frequencyType, setFrequencyType] = useState<HabitFrequency['type']>('daily');
+  const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]); 
+  const [weeklyTimes, setWeeklyTimes] = useState(3);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
 
-  const getButtonClass = () => {
-      switch(theme) {
-          case 'ocean': return "bg-cyan-500 text-slate-900 hover:bg-cyan-400";
-          case 'ink': return "bg-black text-white hover:bg-gray-800 rounded-lg";
-          default: return "bg-black text-white hover:bg-gray-800 shadow-lg";
-      }
-  };
+  const mainBtnClass = "bg-black hover:bg-gray-800 text-white rounded-full h-12 px-8 shadow-lg transition-all hover:scale-105 active:scale-95 font-black text-xs tracking-widest uppercase";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!habitName.trim()) return toast.error("Enter habit name");
-    if (editingHabit) await addOrUpdateHabit({ ...editingHabit, name: habitName.trim(), color: selectedColor });
-    else await addOrUpdateHabit({ id: `habit-${Date.now()}`, name: habitName.trim(), color: selectedColor, createdAt: new Date().toISOString() });
+    if (!habitName.trim()) return toast.error(t("habits.enterName"));
+    
+    const frequency: HabitFrequency = 
+      frequencyType === 'daily' ? { type: 'daily' } :
+      frequencyType === 'weekly' ? { type: 'weekly', days: selectedDays } :
+      { type: 'times_per_week', times: weeklyTimes };
+
+    const habitData: Habit = {
+      id: editingHabit?.id || `habit-${Date.now()}`,
+      name: habitName.trim(),
+      color: selectedColor,
+      createdAt: editingHabit?.createdAt || new Date().toISOString(),
+      frequency
+    };
+
+    await addOrUpdateHabit(habitData);
     setIsAddOpen(false); resetForm();
+    toast.success(editingPlan ? t("plan.eventUpdated") : t("habits.added"));
   };
 
-  const resetForm = () => { setEditingHabit(null); setHabitName(""); setSelectedColor(COLORS[0]); };
-  const openEditDialog = (habit: Habit) => { setEditingHabit(habit); setHabitName(habit.name); setSelectedColor(habit.color); setIsManageOpen(false); setIsAddOpen(true); };
+  const resetForm = () => { 
+    setEditingHabit(null); setHabitName(""); setSelectedColor(COLORS[0]);
+    setFrequencyType('daily'); setSelectedDays([1, 2, 3, 4, 5]); setWeeklyTimes(3);
+  };
+
+  const openEditDialog = (habit: Habit) => { 
+    setEditingHabit(habit); setHabitName(habit.name); setSelectedColor(habit.color);
+    if (habit.frequency) {
+        setFrequencyType(habit.frequency.type);
+        if (habit.frequency.type === 'weekly') setSelectedDays(habit.frequency.days);
+        if (habit.frequency.type === 'times_per_week') setWeeklyTimes(habit.frequency.times);
+    }
+    setIsManageOpen(false); setIsAddOpen(true); 
+  };
+
+  const toggleDay = (day: number) => {
+    setSelectedDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]);
+  };
 
   if (isLoading) return null;
 
-  const completionRate = calculateCompletionRate(habits.length, entries);
-  const bestStreak = habits.length > 0 ? Math.max(...habits.map(h => calculateStreak(h.id, entries))) : 0;
+  const completionRate = calculateCompletionRate(habits, entries);
+  const bestStreak = habits.length > 0 ? Math.max(...habits.map(h => calculateStreak(h.id, entries, h))) : 0;
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto p-8 animate-in fade-in duration-700">
       <div className="flex items-center justify-between">
-        <h2 className={cn("text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-600", theme === 'ink' && "text-black")}>Habits</h2>
+        <h2 className={cn("text-4xl font-black tracking-tighter uppercase bg-clip-text text-transparent",
+          theme === 'ocean' ? "bg-gradient-to-r from-cyan-400 to-blue-500" :
+          theme === 'ink' ? "text-black" :
+          theme === 'zen' ? "bg-gradient-to-r from-emerald-600 to-teal-600" :
+          "bg-gradient-to-r from-purple-600 to-pink-600"
+        )}>{t("nav.habits")}</h2>
         <div className="flex gap-3">
           {habits.length > 0 && (
             <Dialog 
               open={isManageOpen} 
               onOpenChange={setIsManageOpen}
-              trigger={<Button variant="outline" className="rounded-full h-12 w-12 p-0 border-0 shadow-sm"><Pencil className="w-5 h-5" /></Button>}
-              title="Manage Habits"
+              trigger={<Button variant="outline" className="rounded-full h-12 w-12 p-0 border-0 shadow-sm transition-transform hover:scale-110 active:scale-90 bg-white"><Pencil className="w-5 h-5 text-black" /></Button>}
+              title={t("common.edit")}
             >
               <div className="space-y-3 mt-4">
                 {habits.map(h => (
-                  <div key={h.id} className="flex items-center justify-between p-3 rounded-xl bg-white/40">
+                  <div key={h.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100">
                     <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: h.color }} />
-                      <span className="font-bold">{h.name}</span>
+                      <div className="w-4 h-4 rounded-full shadow-inner" style={{ backgroundColor: h.color }} />
+                      <span className="font-black text-sm uppercase">{h.name}</span>
                     </div>
-                    <div className="flex gap-2">
-                      <Button size="icon" variant="ghost" onClick={() => openEditDialog(h)}><Edit2 className="w-4 h-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => removeHabit(h.id)} className="hover:text-red-500"><Trash2 className="w-4 h-4" /></Button>
+                    <div className="flex gap-1">
+                      <Button size="icon" variant="ghost" onClick={() => openEditDialog(h)} className="hover:bg-black hover:text-white rounded-full transition-colors"><Edit2 className="w-4 h-4" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => removeHabit(h.id)} className="hover:bg-red-500 hover:text-white rounded-full transition-colors"><Trash2 className="w-4 h-4" /></Button>
                     </div>
                   </div>
                 ))}
@@ -79,18 +114,62 @@ const Habits: FC = () => {
           <Dialog 
             open={isAddOpen} 
             onOpenChange={(open) => { setIsAddOpen(open); if (!open) resetForm(); }}
-            trigger={<Button className={cn("rounded-full h-12 px-6 shadow-lg transition-transform hover:scale-105 active:scale-95", getButtonClass())}><Plus className="w-5 h-5 mr-2" />Add Habit</Button>}
-            title={editingHabit ? "Edit Habit" : "New Habit"}
-            description="Set habit name and color"
+            trigger={<Button className={mainBtnClass}><Plus className="w-4 h-4 mr-2" />{t("habits.addHabit")}</Button>}
+            title={editingHabit ? t("common.edit") : t("habits.addNewHabit")}
+            description={t("habits.enterColorDesc")}
           >
             <form onSubmit={handleSubmit} className="space-y-6 mt-4">
-                <input className="w-full h-12 px-4 rounded-xl bg-slate-100/50 border-0 font-bold outline-none focus:ring-2 focus:ring-blue-400 transition-all" placeholder="Habit name" value={habitName} onChange={e => setHabitName(e.target.value)} required />
-                <div className="flex gap-3 flex-wrap justify-center">
-                  {COLORS.map(c => ( 
-                    <button key={c} type="button" onClick={() => setSelectedColor(c)} className={cn("w-10 h-10 rounded-full border-4 transition-all hover:scale-110", selectedColor === c ? "border-black scale-110 shadow-lg" : "border-transparent opacity-60")} style={{ backgroundColor: c }} /> 
-                  ))}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t("habits.habitName")}</label>
+                  <input className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-0 font-bold outline-none focus:ring-2 focus:ring-blue-400" placeholder={t("habits.placeholder")} value={habitName} onChange={e => setHabitName(e.target.value)} required />
                 </div>
-                <Button type="submit" className={cn("w-full h-14 rounded-2xl text-lg font-bold shadow-xl", getButtonClass())}>Save Habit</Button>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-1">{t("habits.selectColor")}</label>
+                  <div className="flex gap-2.5 py-1 flex-wrap">
+                    {COLORS.map(c => ( 
+                      <button key={c} type="button" onClick={() => setSelectedColor(c)} className={cn("w-7 h-7 rounded-full border-2 transition-all hover:scale-110", selectedColor === c ? "border-slate-900 scale-110 shadow-md" : "border-transparent opacity-60")} style={{ backgroundColor: c }} /> 
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-1 flex items-center gap-2"><Calendar className="w-3 h-3" /> {t("plan.week")}</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['daily', 'weekly', 'times_per_week'] as const).map(t_freq => (
+                      <button 
+                        key={t_freq}
+                        type="button"
+                        onClick={() => setFrequencyType(t_freq)}
+                        className={cn(
+                          "py-2 px-1 rounded-xl text-[10px] font-black transition-all border-2 uppercase",
+                          frequencyType === t_freq ? "bg-black text-white border-black shadow-md" : "bg-slate-50 text-slate-400 border-transparent hover:bg-slate-100"
+                        )}
+                      >
+                        {t_freq === 'daily' ? t("habits.everyDay") : t_freq === 'weekly' ? t("habits.specDays") : t("habits.weeklyGoal")}
+                      </button>
+                    ))}
+                  </div>
+
+                  {frequencyType === 'weekly' && (
+                    <div className="flex justify-between gap-1 pt-2 animate-in fade-in slide-in-from-top-2">
+                      {DAYS.map((day, i) => (
+                        <button key={day} type="button" onClick={() => toggleDay(i)} className={cn("w-9 h-9 rounded-xl text-[10px] font-black transition-all uppercase", selectedDays.includes(i) ? "bg-black text-white shadow-lg" : "bg-slate-50 text-slate-300")}>
+                          {day[0]}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {frequencyType === 'times_per_week' && (
+                    <div className="flex items-center gap-4 pt-2 animate-in fade-in slide-in-from-top-2">
+                      <input type="range" min="1" max="7" step="1" value={weeklyTimes} onChange={e => setWeeklyTimes(parseInt(e.target.value))} className="flex-1 h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-black" />
+                      <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-black text-white text-xs font-black">{weeklyTimes}X</span>
+                    </div>
+                  )}
+                </div>
+
+                <Button type="submit" className={cn("w-full h-14 rounded-2xl shadow-xl mt-4", mainBtnClass)}>{t("common.save")}</Button>
             </form>
           </Dialog>
         </div>
@@ -98,40 +177,12 @@ const Habits: FC = () => {
 
       {habits.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 space-y-10">
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 to-purple-400/30 blur-[100px] rounded-full scale-150 animate-pulse" />
-            <div className="relative w-40 h-40 rounded-full border-2 border-dashed border-blue-300/50 flex items-center justify-center animate-[spin_15s_linear_infinite]">
-              <div className="w-32 h-32 rounded-full border-2 border-dotted border-purple-300/30 animate-[spin_10s_linear_infinite_reverse]" />
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center">
-               <div className="w-20 h-20 bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-400 rounded-3xl shadow-[0_20px_50px_rgba(37,99,235,0.3)] flex items-center justify-center transform rotate-12 transition-transform hover:rotate-0 duration-500">
-                  <CheckSquare className="w-10 h-10 text-white" strokeWidth={2.5} />
-               </div>
-            </div>
-            <Sparkles className="absolute -top-4 -right-4 w-8 h-8 text-yellow-400 animate-bounce" />
-          </div>
-          
           <div className="text-center space-y-6 max-w-2xl px-4">
-            <h3 className={cn(
-              "text-4xl md:text-5xl font-black tracking-tight leading-tight",
-              theme === 'ink' ? "text-black font-['Rubik_Dirt']" : "text-gray-900"
-            )}>
-              Let's build your<br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-500 to-cyan-500">first habit</span> together
-            </h3>
-            <p className="text-muted-foreground font-semibold text-xl opacity-80">
-              Small steps every day lead to a big spiral of success.
-            </p>
+            <h3 className="text-4xl md:text-5xl font-black tracking-tight leading-tight uppercase">{t("habits.noHabits")}</h3>
+            <p className="text-muted-foreground font-bold text-xl opacity-60">{t("habits.addFirst")}</p>
           </div>
-
-          <Button 
-            onClick={() => setIsAddOpen(true)}
-            className={cn(
-              "h-16 px-12 rounded-2xl text-xl font-black shadow-[0_20px_40px_rgba(0,0,0,0.1)] transition-all hover:scale-105 active:scale-95 hover:shadow-[0_25px_50px_rgba(0,0,0,0.15)]",
-              getButtonClass()
-            )}
-          >
-            Start My Journey ✨
+          <Button onClick={() => setIsAddOpen(true)} className={cn("h-16 px-12 rounded-3xl text-lg font-black shadow-2xl transition-all hover:scale-105 active:scale-95", mainBtnClass)}>
+            {t("habits.addHabit")} ✨
           </Button>
         </div>
       ) : (
