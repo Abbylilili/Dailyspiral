@@ -238,4 +238,24 @@
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
   }
+
+  /* Mood Slider Custom Styles */
+  .mood-slider {
+    @apply appearance-none w-full h-2 rounded-lg bg-black/5 cursor-pointer relative overflow-visible;
+  }
+
+  .mood-slider::-webkit-slider-runnable-track {
+    @apply h-2 rounded-lg;
+    background: linear-gradient(to right, #ff9500, #ff2d55, #5856d6, #007aff, #34c759);
+    -webkit-mask-image: linear-gradient(to right, black 0%, black var(--range-progress), transparent var(--range-progress), transparent 100%);
+    mask-image: linear-gradient(to right, black 0%, black var(--range-progress), transparent var(--range-progress), transparent 100%);
+  }
+
+  .mood-slider::-webkit-slider-thumb {
+    @apply appearance-none w-10 h-10 cursor-pointer opacity-0;
+  }
+
+  .mood-slider::-moz-range-thumb {
+    @apply w-10 h-10 border-0 cursor-pointer opacity-0;
+  }
 }
