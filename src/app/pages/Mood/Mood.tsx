@@ -1,5 +1,5 @@
 import type { FC } from 'react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, memo } from 'react';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -21,6 +21,9 @@ import { getMoodConfig } from '@/app/lib/moodConfig';
 import { Dialog } from '@/app/components/ui/dialog';
 import { getDailyContent } from '@/app/services/ai';
 
+// 使用 memo 保护动画组件，防止父组件 state 更新导致其重绘闪烁
+const MemoizedLiquidHeart = memo(LiquidHeart);
+
 const Mood: FC = () => {
   const { theme } = useTheme();
   const { t, language } = useLanguage();
@@ -30,24 +33,47 @@ const Mood: FC = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [mood, setMood] = useState(5);
   const [note, setNote] = useState("");
-  const [gender, setGender] = useState<'boy' | 'girl'>(() => getGenderPreference() || 'girl');
+  const [gender, setGender] = useState<'boy' | 'girl'>(() => {
+    const pref = getGenderPreference();
+    if (pref === 'boy' || pref === 'girl') return pref;
+    return 'girl';
+  });
   const [isTrendOpen, setIsTrendOpen] = useState(false);
   const [aiMusic, setAiMusic] = useState<any[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
 
   const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
   const todayStr = format(new Date(), 'yyyy-MM-dd');
+  
+  const lastDateRef = useRef(selectedDateStr);
+
+  const updateGender = (newGender: 'boy' | 'girl') => {
+    setGender(newGender);
+    saveGenderPreference(newGender);
+  };
 
   useEffect(() => {
+    const isDateChanged = lastDateRef.current !== selectedDateStr;
     const entry = moods.find(m => m.date === selectedDateStr);
-    if (entry) { setMood(entry.mood); setNote(entry.note || ""); } 
-    else { setMood(5); setNote(""); }
-    setAiMusic([]); 
+    
+    // 关键修复：只有在日期切换时才重置 AI 建议和状态
+    if (isDateChanged) {
+      if (entry) {
+        setMood(entry.mood);
+        setNote(entry.note || "");
+      } else {
+        setMood(5);
+        setNote("");
+      }
+      setAiMusic([]);
+      lastDateRef.current = selectedDateStr;
+    }
   }, [selectedDateStr, moods]);
 
   const handleSave = async () => {
     await addMood({ id: selectedDateStr, date: selectedDateStr, mood, note });
     toast.success(t("mood.saved"));
+    
     setIsAiLoading(true);
     try {
       const { data } = await getDailyContent({
@@ -56,39 +82,23 @@ const Mood: FC = () => {
       });
       if (data?.music) setAiMusic(data.music);
     } catch (err) {
-      console.warn("AI logic not ready, using fallback");
+      console.warn("AI logic not ready");
     } finally {
       setIsAiLoading(false);
     }
   };
 
-  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
-  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
-  const staticRecs = getRecommendations(mood, theme, t);
+  const weekStart = useMemo(() => startOfWeek(selectedDate, { weekStartsOn: 1 }), [selectedDate]);
+  const weekEnd = useMemo(() => endOfWeek(selectedDate, { weekStartsOn: 1 }), [selectedDate]);
+  const weekDays = useMemo(() => eachDayOfInterval({ start: weekStart, end: weekEnd }), [weekStart, weekEnd]);
+  
+  const staticRecs = useMemo(() => getRecommendations(mood, theme, t), [mood, theme, t]);
 
-  const trendData = weekDays.map(day => {
+  const trendData = useMemo(() => weekDays.map(day => {
       const dStr = format(day, 'yyyy-MM-dd');
       const entry = moods.find(m => m.date === dStr);
       return { date: dStr, mood: entry ? entry.mood : null };
-  });
-
-  // Enhanced dynamic fallback recommendations
-  const dynamicRecs = useMemo(() => {
-    const isZh = language === 'zh';
-    if (mood <= 3) return [
-      { icon: <Music className="text-indigo-500" />, title: isZh ? "《Comforting Sounds》" : "Comforting Sounds", subtitle: isZh ? "音乐 • 舒缓" : "Music • Soothing", artist: "Chill Mix" },
-      { icon: <Coffee className="text-stone-500" />, title: isZh ? "深呼吸练习" : "Deep Breathing", subtitle: isZh ? "身心健康 • 5分钟" : "Wellness • 5 min" }
-    ];
-    if (mood <= 7) return [
-      { icon: <Music className="text-blue-500" />, title: isZh ? "《Focus Beats》" : "Focus Beats", subtitle: isZh ? "音乐 • 专注" : "Music • Focus", artist: "Lofi Girl" },
-      { icon: <Activity className="text-emerald-500" />, title: isZh ? "公园漫步" : "Short Walk", subtitle: isZh ? "健康 • 15分钟" : "Health • 15 min" }
-    ];
-    return [
-      { icon: <Music className="text-pink-500" />, title: isZh ? "《Golden Hour》" : "Golden Hour", subtitle: isZh ? "音乐 • 能量" : "Music • Energy", artist: "JVKE" },
-      { icon: <Activity className="text-rose-500" />, title: isZh ? "燃脂拉伸" : "Quick Workout", subtitle: isZh ? "健身 • 20分钟" : "Fitness • 20 min" }
-    ];
-  }, [mood, language]);
+  }), [weekDays, moods]);
 
   const getCardClass = () => {
     switch(theme) {
@@ -150,7 +160,7 @@ const Mood: FC = () => {
             <CardContent className="p-0 h-full relative">
               <div className="absolute top-8 left-8 z-10"><h4 className={cn("font-black text-xl uppercase tracking-tighter", theme === 'ocean' ? "text-white" : "text-gray-800")}>{t("mood.bestDay")}</h4></div>
               
-              <LiquidHeart percentage={mood * 10} status={mood >= 8 ? "Amazing" : mood >= 5 ? "Good" : "Rough"} />
+              <MemoizedLiquidHeart percentage={mood * 10} status={mood >= 8 ? "Amazing" : mood >= 5 ? "Good" : "Rough"} />
 
               <Button onClick={() => setIsTrendOpen(true)} className="absolute bottom-6 left-8 z-20 rounded-full bg-black hover:bg-gray-800 text-white transition-all shadow-lg font-black text-[10px] uppercase tracking-widest px-6 h-10">
                 <TrendingUp className="w-3.5 h-3.5 mr-2" /> {t("mood.weeklyTrend")}
@@ -163,37 +173,56 @@ const Mood: FC = () => {
               <Sparkles className="w-5 h-5 text-amber-500" />
               {t("mood.dailyRecommendations")}
             </h3>
-            <div className="grid gap-4">
-              {isAiLoading ? (
-                <div className="p-12 flex flex-col items-center justify-center bg-white/40 rounded-[2.5rem] border border-dashed border-slate-200 animate-pulse">
-                  <div className="animate-spin w-8 h-8 border-4 border-slate-900 border-t-transparent rounded-full mb-4" />
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-40">{t("insights.analyzing")}</p>
-                </div>
-              ) : aiMusic.length > 0 ? (
+            <div className="grid gap-4 min-h-[200px] relative">
+              {/* 核心修复：始终渲染内容，不进行组件替换 */}
+              {aiMusic.length > 0 ? (
                 aiMusic.map((song, i) => (
                   <a key={i} href={`https://open.spotify.com/search/${encodeURIComponent(song.title + ' ' + song.artist)}`} target="_blank" rel="noreferrer" 
-                     className="p-5 flex items-center gap-5 bg-white rounded-[2rem] shadow-sm border border-white/40 hover:scale-[1.02] transition-all cursor-pointer group">
-                    <div className="w-14 h-14 flex items-center justify-center bg-slate-900 rounded-2xl shadow-lg group-hover:bg-green-500 transition-colors text-white text-2xl"><Music className="w-6 h-6" /></div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[9px] font-black uppercase text-blue-500 mb-1 tracking-widest">{t("mood.musicRecommendation")}</div>
-                      <h4 className="font-black text-lg uppercase truncate leading-none text-slate-900">《{song.title}》</h4>
-                      <p className="text-[10px] font-black uppercase opacity-40 mt-1 truncate">{song.artist}</p>
-                      <p className="text-[9px] font-bold text-slate-400 mt-2 line-clamp-1 italic italic">"{song.reason}"</p>
+                     className={cn(
+                       "p-5 flex items-center gap-5 rounded-[2rem] shadow-sm hover:scale-[1.02] transition-all cursor-pointer group relative overflow-hidden border-0",
+                       theme === 'ocean' ? "bg-slate-800/50 text-white" : 
+                       theme === 'zen' ? "bg-emerald-50/50" : 
+                       theme === 'ink' ? "bg-white border-2 border-black" : "bg-white"
+                     )}
+                     style={theme === 'pastel' ? {
+                       backgroundImage: `${staticRecs[0]?.style?.backgroundImage.split(',')[0]}, linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%)`,
+                       backgroundSize: 'cover',
+                       backgroundBlendMode: 'overlay, normal',
+                       color: '#4F46E5'
+                     } : undefined}>
+                    <div className={cn(
+                      "w-14 h-14 flex items-center justify-center rounded-2xl shadow-lg transition-colors text-white text-2xl z-10",
+                      theme === 'ocean' ? "bg-cyan-600 group-hover:bg-cyan-500" : "bg-slate-900 group-hover:bg-green-500"
+                    )}><Music className="w-6 h-6" /></div>
+                    <div className="flex-1 min-w-0 z-10">
+                      <div className={cn("text-[9px] font-black uppercase mb-1 tracking-widest", theme === 'ocean' ? "text-cyan-400" : "text-blue-500")}>{t("mood.musicRecommendation")}</div>
+                      <h4 className={cn("font-black text-lg uppercase truncate leading-none", theme === 'ocean' ? "text-white" : "text-slate-900")}>《{song.title}》</h4>
+                      <p className={cn("text-[10px] font-black uppercase mt-1 truncate", theme === 'ocean' ? "text-white/40" : "opacity-40")}>{song.artist}</p>
+                      <p className={cn("text-[9px] font-bold mt-2 line-clamp-1 italic", theme === 'ocean' ? "text-white/60" : "text-slate-400")}>"{song.reason}"</p>
                     </div>
                   </a>
                 ))
               ) : (
-                dynamicRecs.map((rec, i) => (
-                  <div key={i} className="p-5 flex items-center gap-5 bg-white rounded-[2rem] shadow-sm border border-white/40 hover:scale-[1.02] transition-all">
-                    <div className="w-14 h-14 flex items-center justify-center bg-slate-50 rounded-2xl shadow-inner text-2xl">{rec.icon}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[9px] font-black uppercase text-amber-500 mb-1 tracking-widest">RECOMMENDED</div>
-                      <h4 className="font-black text-lg uppercase truncate">{rec.title}</h4>
-                      {rec.artist && <p className="text-[10px] font-black uppercase opacity-40">{rec.artist}</p>}
-                      <p className="text-[10px] font-bold text-slate-400 mt-1">{rec.subtitle}</p>
+                staticRecs.map((rec, i) => (
+                  <div key={i} className="p-5 flex items-center gap-5 rounded-[2rem] shadow-sm hover:scale-[1.02] transition-all relative overflow-hidden" style={rec.style}>
+                    <div className="w-14 h-14 flex items-center justify-center bg-white/40 backdrop-blur-md rounded-2xl shadow-inner text-2xl z-10">{rec.icon}</div>
+                    <div className="flex-1 min-w-0 z-10">
+                      <div className={cn("text-[9px] font-black uppercase mb-1 tracking-widest", theme === 'ocean' ? "text-cyan-400" : "text-amber-600")}>RECOMMENDED</div>
+                      <h4 className={cn("font-black text-lg uppercase truncate", theme === 'ocean' ? "text-white" : "text-slate-900")}>{rec.title}</h4>
+                      <p className={cn("text-[10px] font-bold mt-1", theme === 'ocean' ? "text-white/60" : "text-slate-500")}>{rec.subtitle}</p>
                     </div>
                   </div>
                 ))
+              )}
+              
+              {/* 加载动画作为覆盖层，不破坏列表结构 */}
+              {isAiLoading && (
+                <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/10 backdrop-blur-[2px] rounded-[2.5rem] animate-in fade-in duration-300">
+                  <div className="bg-black/80 p-4 rounded-3xl shadow-2xl flex items-center gap-3">
+                    <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                    <span className="text-[10px] font-black text-white uppercase tracking-widest">{t("insights.analyzing")}</span>
+                  </div>
+                </div>
               )}
             </div>
           </div>

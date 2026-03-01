@@ -1,8 +1,9 @@
 import type { FC } from 'react';
+import { useState } from 'react';
 import { Card, CardContent } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Textarea } from "@/app/components/ui/textarea";
-import { Smile, Save } from "lucide-react";
+import { Smile, Save, Star } from "lucide-react";
 import { useTheme } from "@/app/contexts/ThemeContext";
 import { useLanguage } from "@/app/contexts/LanguageContext";
 import { cn } from "@/app/components/ui/utils";
@@ -21,6 +22,10 @@ const MoodLogger: FC<MoodLoggerProps> = ({ mood, note, gender, onMoodChange, onN
   const { theme } = useTheme();
   const { t } = useLanguage();
   const moodConfig = getMoodConfig(mood);
+  const [isPressing, setIsPressing] = useState(false);
+
+  // 计算星星的位置百分比 (1-10 映射到 0-100)
+  const progressPercent = ((mood - 1) / 9) * 100;
 
   return (
     <Card className={cn("p-8 rounded-[2.5rem] border-0 shadow-xl", 
@@ -52,10 +57,40 @@ const MoodLogger: FC<MoodLoggerProps> = ({ mood, note, gender, onMoodChange, onN
               <span className="text-[10px] font-black uppercase opacity-40">{t("mood.veryBad")}</span>
               <span className="text-[10px] font-black uppercase opacity-40">{t("mood.excellent")}</span>
             </div>
-            <input 
-              type="range" min="1" max="10" step="1" value={mood} onChange={(e) => onMoodChange(parseInt(e.target.value))}
-              className={cn("w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-black", theme === 'ocean' && "bg-slate-700")}
-            />
+            
+            <div className="relative w-full h-10 flex items-center">
+                {/* 原生滑块交互层 */}
+                <input 
+                    type="range" min="1" max="10" step="1" value={mood} 
+                    onChange={(e) => onMoodChange(parseInt(e.target.value))}
+                    onMouseDown={() => setIsPressing(true)}
+                    onMouseUp={() => setIsPressing(false)}
+                    onTouchStart={() => setIsPressing(true)}
+                    onTouchEnd={() => setIsPressing(false)}
+                    className="mood-slider absolute inset-0 z-20 w-full h-full cursor-pointer transition-none"
+                    style={{ "--range-progress": `${progressPercent}%` } as any}
+                />
+                
+                {/* 自定义星星滑块 - 极端强制瞬间位移，无视任何 CSS */}
+                <div 
+                    className="absolute pointer-events-none z-30 flex items-center justify-center"
+                    style={{ 
+                        left: `calc(${progressPercent}% - 12px)`, 
+                        width: '24px',
+                        height: '24px',
+                        transition: 'none !important', // 强力禁止
+                        WebkitTransition: 'none !important'
+                    }}
+                >
+                    <Star 
+                        className={cn(
+                            "w-6 h-6 fill-yellow-400 stroke-none drop-shadow-[0_0_8px_rgba(250,204,21,0.6)] !transition-none",
+                            isPressing ? "scale-125" : "scale-100"
+                        )} 
+                        style={{ transition: 'none !important' }}
+                    />
+                </div>
+            </div>
           </div>
         </div>
 
