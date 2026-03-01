@@ -59,7 +59,7 @@ const QuickEntryMood: FC<QuickEntryMoodProps> = ({ initialMood = 5, date, onRefr
           <div className="text-4xl font-black tracking-tighter leading-none">{mood}<span className="text-sm opacity-30">/10</span></div>
         </div>
 
-        <div className="flex flex-col items-center gap-6 mt-4 mb-8 px-2">
+        <div className="flex flex-col items-center gap-6 mt-2 mb-8 px-2">
           <div className={cn("w-24 h-24 rounded-full overflow-hidden shadow-lg border-2 border-white transition-all duration-500", moodConfig.color)}>
             {moodConfig.illustration ? (
               <img src={moodConfig.illustration[gender]} className="w-full h-full object-cover" alt="Mood" />
@@ -69,7 +69,6 @@ const QuickEntryMood: FC<QuickEntryMoodProps> = ({ initialMood = 5, date, onRefr
           </div>
           
           <div className="relative w-full h-10 flex items-center mt-2">
-            {/* 原生 Input 用于交互，层级 z-20，滑块透明 */}
             <input 
               type="range" min="1" max="10" step="1" value={mood} 
               onChange={(e) => setMood(parseInt(e.target.value))}
@@ -81,7 +80,6 @@ const QuickEntryMood: FC<QuickEntryMoodProps> = ({ initialMood = 5, date, onRefr
               style={{ "--range-progress": `${progressPercent}%` } as any}
             />
             
-            {/* 自定义 React 星星滑块 - 层级提升到 z-30，确保在进度条“上边” */}
             <div 
               className="absolute pointer-events-none transition-all duration-150 ease-out z-30 flex items-center justify-center"
               style={{ 
