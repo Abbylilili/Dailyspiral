@@ -150,10 +150,28 @@ const DailyPlan: FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex items-center bg-slate-100 rounded-full px-2 py-1">
-            <Button variant="ghost" size="icon" onClick={handlePrev} className="rounded-full h-8 w-8 hover:bg-white hover:shadow-sm transition-all"><ChevronLeft className="w-4 h-4" /></Button>
-            <Button variant="ghost" className="font-black text-[10px] min-w-[120px] hover:bg-transparent uppercase tracking-wider" onClick={() => setCurrentDate(new Date())}>{getHeaderLabel()}</Button>
-            <Button variant="ghost" size="icon" onClick={handleNext} className="rounded-full h-8 w-8 hover:bg-white hover:shadow-sm transition-all"><ChevronRight className="w-4 h-4" /></Button>
+          <div className={cn(
+            "flex items-center rounded-full px-2 py-1",
+            theme === 'ocean' ? "bg-white/10 backdrop-blur-sm border border-white/10" : "bg-slate-100"
+          )}>
+            <Button variant="ghost" size="icon" onClick={handlePrev} className={cn(
+              "rounded-full h-8 w-8 transition-all",
+              theme === 'ocean' ? "text-white hover:bg-white/20" : "hover:bg-white hover:shadow-sm"
+            )}>
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" className={cn(
+              "font-black text-[10px] min-w-[120px] hover:bg-transparent uppercase tracking-wider",
+              theme === 'ocean' ? "text-white" : "text-slate-600"
+            )} onClick={() => setCurrentDate(new Date())}>
+              {getHeaderLabel()}
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleNext} className={cn(
+              "rounded-full h-8 w-8 transition-all",
+              theme === 'ocean' ? "text-white hover:bg-white/20" : "hover:bg-white hover:shadow-sm"
+            )}>
+              <ChevronRight className="w-4 h-4" />
+            </Button>
           </div>
           
           <Dialog 

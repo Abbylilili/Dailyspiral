@@ -113,7 +113,7 @@ export const DayView: FC<DayViewProps> = ({ currentDate, plans, onEdit, onTimeCl
             className="relative flex h-[80px] border-b border-slate-50 group cursor-pointer hover:bg-blue-50/20 transition-colors"
           >
             <div className="w-14 flex justify-end pr-4 -mt-2.5">
-              <span className="text-[10px] font-black text-slate-300 group-hover:text-blue-500 transition-colors tracking-tighter">
+              <span className="text-[10px] font-black text-slate-500 group-hover:text-blue-500 transition-colors tracking-tighter">
                 {`${hour}:00`}
               </span>
             </div>

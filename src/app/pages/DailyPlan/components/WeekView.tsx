@@ -40,12 +40,12 @@ export const WeekView: FC<WeekViewProps> = ({ currentDate, plans, onEdit, onTime
         <div className="w-12" />
         {weekDays.map(day => (
           <div key={day.toISOString()} className="flex-1 py-2 text-center group">
-            <div className="text-[10px] font-black text-slate-300 uppercase tracking-tighter group-hover:text-blue-400 transition-colors">
+            <div className="text-[10px] font-black text-slate-500 uppercase tracking-tighter group-hover:text-blue-400 transition-colors">
               {format(day, 'EEE', { locale })}
             </div>
             <div className={cn(
               "text-xs font-black w-7 h-7 flex items-center justify-center mx-auto rounded-full mt-1 transition-all",
-              format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? "bg-blue-600 text-white shadow-lg shadow-blue-100" : "text-slate-400 group-hover:text-slate-600"
+              format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? "bg-blue-600 text-white shadow-lg shadow-blue-100" : "text-slate-600 group-hover:text-slate-800"
             )}>
               {format(day, 'd')}
             </div>
@@ -55,10 +55,10 @@ export const WeekView: FC<WeekViewProps> = ({ currentDate, plans, onEdit, onTime
 
       <div className="flex-1 overflow-y-auto relative h-[600px] scrollbar-hide">
         <div className="flex min-h-full">
-          <div className="w-12 border-r border-slate-50">
+          <div className="w-12 border-r border-slate-50 pt-2">
             {HOURS.map(hour => (
               <div key={hour} className="h-[60px] relative">
-                <span className="absolute -top-2 right-2 text-[9px] font-black text-slate-200 uppercase">
+                <span className="absolute -top-2.5 right-2 text-[9px] font-black text-slate-400 uppercase">
                   {`${hour}:00`}
                 </span>
               </div>
@@ -70,7 +70,7 @@ export const WeekView: FC<WeekViewProps> = ({ currentDate, plans, onEdit, onTime
             const dayPlans = plans.filter(p => p.date === dateStr);
 
             return (
-              <div key={dateStr} className="flex-1 relative border-r border-slate-50 last:border-0 group hover:bg-slate-50/30 transition-colors">
+              <div key={dateStr} className="flex-1 relative border-r border-slate-50 last:border-0 group hover:bg-slate-50/30 transition-colors pt-2">
                 {HOURS.map(hour => (
                   <div key={hour} onClick={() => onTimeClick?.(day, hour)} className="h-[60px] border-b border-slate-50/50 cursor-pointer" />
                 ))}
