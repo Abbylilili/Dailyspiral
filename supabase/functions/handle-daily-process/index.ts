@@ -9,7 +9,7 @@ async function generateAIContent(userData: any, lang: string) {
                   Habit completion today: ${userData.completion * 100}%.
                   
                   Tasks: 
-                  1. Short Insight (<100 words) about their day. 
+                  1. Short Insight (<100 words) about their days. 
                   2. Short Quote (<15 words) to inspire them. 
                   3. 3 Songs that perfectly match this mood and the specific keywords in their note.
                   Return strictly JSON: { "insight": "...", "quote": "...", "music": [{ "title": "...", "artist": "...", "reason": "..." }] }`;
